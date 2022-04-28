@@ -1,6 +1,9 @@
 
-// LunarOrbit.h : main header file for the LunarOrbit application
-//
+
+/////////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2022 by W. T. Block, All Rights Reserved
+/////////////////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #ifndef __AFXWIN_H__
@@ -9,11 +12,7 @@
 
 #include "resource.h"       // main symbols
 
-
-// CLunarOrbitApp:
-// See LunarOrbit.cpp for the implementation of this class
-//
-
+/////////////////////////////////////////////////////////////////////////////
 class CLunarOrbitApp : public CWinAppEx
 {
 public:

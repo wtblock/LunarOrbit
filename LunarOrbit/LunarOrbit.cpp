@@ -1,6 +1,7 @@
 
-// LunarOrbit.cpp : Defines the class behaviors for the application.
-//
+/////////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2022 by W. T. Block, All Rights Reserved
+/////////////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
 #include "afxwinappex.h"
@@ -16,9 +17,7 @@
 #define new DEBUG_NEW
 #endif
 
-
-// CLunarOrbitApp
-
+/////////////////////////////////////////////////////////////////////////////
 BEGIN_MESSAGE_MAP(CLunarOrbitApp, CWinAppEx)
 	ON_COMMAND(ID_APP_ABOUT, &CLunarOrbitApp::OnAppAbout)
 	// Standard file based document commands
@@ -28,9 +27,7 @@ BEGIN_MESSAGE_MAP(CLunarOrbitApp, CWinAppEx)
 	ON_COMMAND(ID_FILE_PRINT_SETUP, &CWinAppEx::OnFilePrintSetup)
 END_MESSAGE_MAP()
 
-
-// CLunarOrbitApp construction
-
+/////////////////////////////////////////////////////////////////////////////
 CLunarOrbitApp::CLunarOrbitApp()
 {
 	m_bHiColorIcons = TRUE;
@@ -43,13 +40,10 @@ CLunarOrbitApp::CLunarOrbitApp()
 	// Place all significant initialization in InitInstance
 }
 
-// The one and only CLunarOrbitApp object
-
+/////////////////////////////////////////////////////////////////////////////
 CLunarOrbitApp theApp;
 
-
-// CLunarOrbitApp initialization
-
+/////////////////////////////////////////////////////////////////////////////
 BOOL CLunarOrbitApp::InitInstance()
 {
 	// InitCommonControlsEx() is required on Windows XP if an application
@@ -145,6 +139,7 @@ BOOL CLunarOrbitApp::InitInstance()
 	return TRUE;
 }
 
+/////////////////////////////////////////////////////////////////////////////
 int CLunarOrbitApp::ExitInstance()
 {
 	//TODO: handle additional resources you may have added
@@ -153,11 +148,7 @@ int CLunarOrbitApp::ExitInstance()
 	return CWinAppEx::ExitInstance();
 }
 
-// CLunarOrbitApp message handlers
-
-
-// CAboutDlg dialog used for App About
-
+/////////////////////////////////////////////////////////////////////////////
 class CAboutDlg : public CDialogEx
 {
 public:
@@ -176,27 +167,29 @@ protected:
 	DECLARE_MESSAGE_MAP()
 };
 
+/////////////////////////////////////////////////////////////////////////////
 CAboutDlg::CAboutDlg() : CDialogEx(IDD_ABOUTBOX)
 {
 }
 
+/////////////////////////////////////////////////////////////////////////////
 void CAboutDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 }
 
+/////////////////////////////////////////////////////////////////////////////
 BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
 END_MESSAGE_MAP()
 
-// App command to run the dialog
+/////////////////////////////////////////////////////////////////////////////
 void CLunarOrbitApp::OnAppAbout()
 {
 	CAboutDlg aboutDlg;
 	aboutDlg.DoModal();
 }
 
-// CLunarOrbitApp customization load/save methods
-
+/////////////////////////////////////////////////////////////////////////////
 void CLunarOrbitApp::PreLoadState()
 {
 	BOOL bNameValid;
@@ -206,15 +199,14 @@ void CLunarOrbitApp::PreLoadState()
 	GetContextMenuManager()->AddMenu(strName, IDR_POPUP_EDIT);
 }
 
+/////////////////////////////////////////////////////////////////////////////
 void CLunarOrbitApp::LoadCustomState()
 {
 }
 
+/////////////////////////////////////////////////////////////////////////////
 void CLunarOrbitApp::SaveCustomState()
 {
 }
 
-// CLunarOrbitApp message handlers
-
-
-
+/////////////////////////////////////////////////////////////////////////////
