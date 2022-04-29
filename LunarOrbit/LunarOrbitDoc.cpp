@@ -30,10 +30,11 @@ CLunarOrbitDoc::CLunarOrbitDoc()
 	DistanceScale = 100000000;
 	MoonX = MetersToMoon;
 	MoonY = 0;
-	SampleTime = 100; // seconds
+	SampleTime = 1; // seconds
 	const double dSamplesPerDay = SamplesPerDay;
 	RunningTime = 0;
 	MassOfTheEarth = 5.983e24;
+	const double dLunarPeriod = LunarPeriod;
 }
 
 /////////////////////////////////////////////////////////////////////////////

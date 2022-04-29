@@ -23,6 +23,7 @@ protected: // create from serialization only
 	double m_dSamplesPerDay; // number of samples per day
 	double m_dRunningTime; // number of seconds the application has run
 	double m_dMassOfTheEarth; // mass of the earth in kilograms
+	double m_dLunarPeriod; // period of the lunar orbit in seconds
 	double m_dAccelerationOfGravity; // meters per second squared
 
 // properties
@@ -182,6 +183,18 @@ public:
 	// mass of the earth in kilograms
 	__declspec( property( get = GetMassOfTheEarth, put = SetMassOfTheEarth ) )
 		double MassOfTheEarth;
+
+	// period of the lunar orbit in seconds
+	double GetLunarPeriod()
+	{
+		const double dDays = 27.32;
+		const double dSeconds = dDays * 86400;
+		m_dLunarPeriod = dSeconds;
+		return m_dLunarPeriod;
+	}
+	// period of the lunar orbit in seconds
+	__declspec( property( get = GetLunarPeriod ) )
+		double LunarPeriod;
 
 	// acceleration of gravity on the moon
 	double GetAccelerationOfGravity()

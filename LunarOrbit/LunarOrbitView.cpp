@@ -573,7 +573,7 @@ void CLunarOrbitView::UpdateMoonPosition()
 	const double dA = pDoc->AccelerationOfGravity;
 
 	// the time the model has been run in seconds
-	const double dTime = pDoc->RunningTime;
+	double dTime = pDoc->RunningTime;
 
 	// mass of the earth in kilograms
 	const double dM = pDoc->MassOfTheEarth;
@@ -586,6 +586,12 @@ void CLunarOrbitView::UpdateMoonPosition()
 
 	// the length of a time slice in seconds
 	const double dSt = pDoc->SampleTime;
+
+	// the known lunar period in seconds
+	const double dLunarPeriod = pDoc->LunarPeriod;
+
+	// are we done with a complete cycle
+	bool bDone = false;
 
 	// loop through the time slices and update positions and velocities
 	for ( int nSample = 0; nSample < nSamplesPerDay; nSample++ )
@@ -613,6 +619,18 @@ void CLunarOrbitView::UpdateMoonPosition()
 		dVy = dNewVy;
 		dX = dNewX;
 		dY = dNewY;
+
+		// update the running time
+		dTime += dSt;
+
+		// stop when a lunar cycle completes
+		if ( dTime >= dLunarPeriod )
+		{
+			KillTimer( 1 );
+			Running = false;
+			bDone = true;
+			break;
+		}
 	}
 
 	// record the final result into the document
@@ -620,7 +638,13 @@ void CLunarOrbitView::UpdateMoonPosition()
 	pDoc->MoonY = dY;
 	pDoc->VelocityX = dVx;
 	pDoc->VelocityY = dVy;
-	pDoc->RunningTime = dSt * nSamplesPerDay + dTime;
+	pDoc->RunningTime = dTime;
+
+	// if we are done, repaint the view
+	if ( bDone )
+	{
+		Invalidate();
+	}
 
 } // UpdateMoonPosition()
 
