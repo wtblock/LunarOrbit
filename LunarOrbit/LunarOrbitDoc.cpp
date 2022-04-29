@@ -22,8 +22,18 @@ END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
 CLunarOrbitDoc::CLunarOrbitDoc()
 {
-	// TODO: add one-time construction code here
-
+	AngleInDegrees = -90;
+	Velocity = -1022;
+	VelocityX = 0;
+	VelocityY = -1022;
+	MetersToMoon = 382500000;
+	DistanceScale = 100000000;
+	MoonX = MetersToMoon;
+	MoonY = 0;
+	SampleTime = 100; // seconds
+	const double dSamplesPerDay = SamplesPerDay;
+	RunningTime = 0;
+	MassOfTheEarth = 5.983e24;
 }
 
 /////////////////////////////////////////////////////////////////////////////
