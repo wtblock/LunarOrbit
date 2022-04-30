@@ -33,12 +33,15 @@ BEGIN_MESSAGE_MAP(CLunarOrbitView, CScrollView)
 	ON_UPDATE_COMMAND_UI( ID_EDIT_PAUSE, &CLunarOrbitView::OnUpdateEditPause )
 	ON_COMMAND( ID_EDIT_RUN, &CLunarOrbitView::OnEditRun )
 	ON_UPDATE_COMMAND_UI( ID_EDIT_RUN, &CLunarOrbitView::OnUpdateEditRun )
+	ON_COMMAND( ID_EDIT_SINGLEORBIT, &CLunarOrbitView::OnEditSingleOrbit )
+	ON_UPDATE_COMMAND_UI( ID_EDIT_SINGLEORBIT, &CLunarOrbitView::OnUpdateEditSingleorbit )
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
 CLunarOrbitView::CLunarOrbitView()
 {
 	Running = false;
+	SingleOrbit = false;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -242,15 +245,11 @@ int CLunarOrbitView::SetDrawDC
 	CDC* pDC
 )
 {
-	// the document has hard coded the width to be 11 inches
-	CLunarOrbitDoc* pDoc = Document;
-	const double dDocumentWidth = pDoc->Width;
-
 	// the logical width is 11000 since we are mapping the logical
 	// coordinate system to 1000 pixels per inch which means the 
 	// code does not have to be concerned about the actual resolution
 	// of the output device (image, screen, or printer)
-	const int nLogicalWidth = InchesToLogical( dDocumentWidth );
+	const int nLogicalWidth = LogicalDocumentWidth;
 	if ( nLogicalWidth != 0 )
 	{
 		// isotropic means the values are the same in the X and Y directions
@@ -277,6 +276,9 @@ void CLunarOrbitView::SetPrintDC
 	int& nLogicalHeight // in inches * Map
 )
 {
+	nLogicalWidth = LogicalDocumentWidth;
+	nLogicalHeight = LogicalDocumentHeight;
+
 	nPhysicalWidth = pDC->GetDeviceCaps( HORZRES );
 	nPhysicalHeight = pDC->GetDeviceCaps( VERTRES );
 	const int nPixelsPerInchX = pDC->GetDeviceCaps( LOGPIXELSX );
@@ -394,13 +396,16 @@ void CLunarOrbitView::render
 	double dTopOfPage = 0;
 
 	// create a pen to draw with
-	CPen penGray, penBlue;
+	CPen penGray, penRed, penBlue;
 
 	// save the entry state
 	const int nDC = pDC->SaveDC();
 
 	// 1 hundredths of an inch
 	const int nGrayWidth = InchesToLogical( 0.01 );
+
+	// 2 hundredths of an inch
+	const int nRedWidth = InchesToLogical( 0.02 );
 
 	// 5 hundredth of an inch
 	const int nBlueWidth = InchesToLogical( 0.05 );
@@ -411,17 +416,23 @@ void CLunarOrbitView::render
 	// gray color
 	const COLORREF rgbGray = RGB( 128, 128, 128 );
 
-	// blue color
-	const COLORREF rgbBlue = RGB( 0, 0, 240 );
+	// red color
+	const COLORREF rgbRed = RGB( 255, 0, 0 );
+
+	// green color
+	const COLORREF rgbGreen = RGB( 0, 255, 0 );
 
 	// blue color
-	const COLORREF rgbGreen = RGB( 0, 240, 0 );
+	const COLORREF rgbBlue = RGB( 0, 0, 255 );
 
 	// create a solid gray pen 0.05 inches wide
 	penGray.CreatePen( PS_SOLID, nGrayWidth, rgbGray );
 
 	// create a solid blue pen 0.05 inches wide
 	penBlue.CreatePen( PS_SOLID, nBlueWidth, rgbBlue );
+
+	// create a solid red pen 0.02 inches wide
+	penRed.CreatePen( PS_SOLID, nRedWidth, rgbRed );
 
 	// create a green and gray brush
 	CBrush brGreen, brGray;
@@ -432,6 +443,9 @@ void CLunarOrbitView::render
 	// create a gray brush
 	brGray.CreateSolidBrush( rgbGray );
 
+	CBrush brNull;
+	brNull.CreateStockObject( NULL_BRUSH );
+
 	// create a font for text output
 	CFont font;
 	BuildFont
@@ -441,26 +455,35 @@ void CLunarOrbitView::render
 
 	// setting labels
 	CString csAngle, csVelocity, csVelocityX, csVelocityY,
-		csDistance, csSample, csSamplesPerDay, csRunningTime;
-	csAngle.Format( _T( "Angle in degrees: %0.0f" ), AngleInDegrees );
+		csDistance, csMoonX, csMoonY, 
+		csSample, csSamplesPerDay, csRunningTime;
 	csVelocity.Format
 	(
 		_T( "Initial velocity in meters per second: %0.0f" ), Velocity
 	);
 	csVelocityX.Format
 	(
-		_T( "Initial X-velocity in meters per second: %0.0f" ),
+		_T( "X-velocity in meters per second: %0.0f" ),
 		HorizontalVelocity
 	);
 	csVelocityY.Format
 	(
-		_T( "Initial Y-velocity in meters per second: %0.0f" ),
+		_T( "Y-velocity in meters per second: %0.0f" ),
 		VerticalVelocity
 	);
 	csDistance.Format
 	(
 		_T( "Distance to moon in meters: %0.0f" ), MetersToMoon
 	);
+	csMoonX.Format
+	(
+		_T( "X Distance to moon in meters: %0.0f" ), pDoc->MoonX
+	);
+	csMoonY.Format
+	(
+		_T( "Y Distance to moon in meters: %0.0f" ), pDoc->MoonY
+	);
+	csAngle.Format( _T( "Angle in degrees: %0.02f" ), AngleInDegrees );
 	csSample.Format
 	(
 		_T( "Time between samples in seconds: %0.0f" ), SampleTime
@@ -471,7 +494,7 @@ void CLunarOrbitView::render
 	);
 	csRunningTime.Format
 	(
-		_T( "Running time in days: %0.02f" ), pDoc->RunningTime / 86400
+		_T( "Running time in days: %0.01f" ), pDoc->RunningTime / 86400
 	);
 
 	const double dPageHeight = PageHeight;
@@ -486,18 +509,55 @@ void CLunarOrbitView::render
 	// account for the shift of the view due to scrolling or printed pages
 	pDC->SetWindowOrg( 0, -nPageOffset );
 
-	// time between trajectory calculations
-	const double dT = SampleTime;
+	// gray line for the axes
+	pDC->SelectObject( &penGray );
+
+	// draw historical moon images and orbital path
+	const size_t nPoints = m_OrbitPoints.size();
+	if ( nPoints != 0 )
+	{
+		pDC->Polyline( &m_OrbitPoints[ 0 ], (int)nPoints );
+	}
 
 	// draw settings information
 	pDC->SelectObject( &font );
 	pDC->SetTextAlign( TA_RIGHT | TA_BASELINE );
 
-	// the starting point's coordinates
-	int nX = InchesToLogical( DocumentWidth - 1.0 );
-	int nY = InchesToLogical( 1.0 );
+	const int nMargin = LogicalDocumentMargin;
+
+	// draw the X and Y axes
+	const int nDocWidth = InchesToLogical( DocumentWidth );
+	const int nDocHeight = InchesToLogical( DocumentHeight );
+	CPoint ptEarth = EarthCenter;
+	int nX1 = ptEarth.x - nMargin * 20;
+	int nY1 = ptEarth.y - nMargin * 16;
+	int nX2 = ptEarth.x + nMargin * 20;
+	int nY2 = ptEarth.y + nMargin * 16;
+	for ( int nX = nX1; nX <= nX2; nX += 4 * nMargin )
+	{
+		pDC->MoveTo( nX, nY1 );
+		pDC->LineTo( nX, nY2 );
+	}
+	for ( int nY = nY1; nY <= nY2; nY += 4 * nMargin )
+	{
+		pDC->MoveTo( nX1, nY );
+		pDC->LineTo( nX2, nY );
+	}
+
+	pDC->TextOut( nMargin, ptEarth.y, _T( "X" ) );
+	pDC->TextOut( nDocWidth - nMargin, ptEarth.y, _T( "X" ) );
+	pDC->TextOut( ptEarth.x, nMargin, _T( "Y" ) );
+	pDC->TextOut( ptEarth.x, nTextHeight + nDocHeight - nMargin, _T( "Y" ) );
+
+	// right justified to the right margin
+	int nX = LogicalDocumentWidth - 2 * nMargin;
+	int nY = 2 * nMargin;
 
 	pDC->TextOut( nX, nY, csDistance );
+	nY += nTextHeight;
+	pDC->TextOut( nX, nY, csMoonX );
+	nY += nTextHeight;
+	pDC->TextOut( nX, nY, csMoonY );
 	nY += nTextHeight;
 	pDC->TextOut( nX, nY, csVelocity );
 	nY += nTextHeight;
@@ -514,27 +574,14 @@ void CLunarOrbitView::render
 	pDC->TextOut( nX, nY, csRunningTime );
 	nY += nTextHeight;
 
-	// remember position for writing the total time taken
-	const int nTextX = nX;
-	const int nTextY = nY;
-
-	// gray line for the axes
-	pDC->SelectObject( &penGray );
-
-	// draw the X and Y axes
-	const int nDocWidth = InchesToLogical( DocumentWidth );
-	const int nDocHeight = InchesToLogical( DocumentHeight );
-	CPoint ptEarth = EarthCenter;
-	pDC->MoveTo( 0, ptEarth.y );
-	pDC->LineTo( nDocWidth, ptEarth.y );
-	pDC->MoveTo( ptEarth.x, 0 );
-	pDC->LineTo( ptEarth.x, nDocHeight );
-
 	// color the moon gray
 	pDC->SelectObject( &brGray );
 
 	// create a rectangle representing the moon 
 	CRect rectMoon = MoonRectangle;
+
+	// center point of the moon
+	CPoint ptMoon = MoonCenter;
 
 	// draw the moon as an ellipse that fits into the rectangle
 	pDC->Ellipse( &rectMoon );
@@ -549,10 +596,35 @@ void CLunarOrbitView::render
 	// draw the earth as an ellipse that fits into the rectangle
 	pDC->Ellipse( &rectEarth );
 
+	// draw hypotenuse of triangle
+	pDC->SelectObject( &penRed );
+	pDC->MoveTo( ptMoon );
+	pDC->LineTo( ptEarth );
+
+	// draw the X vector
+	pDC->LineTo( ptMoon.x, ptEarth.y );
+
+	// draw the Y vector
+	pDC->LineTo( ptMoon );
+
 	// restore the device context
 	pDC->RestoreDC( nDC );
 
 } // render
+
+/////////////////////////////////////////////////////////////////////////////
+// add the current moon position to the historical points of the lunar orbit
+void CLunarOrbitView::AddOrbitalPoint()
+{
+	CLunarOrbitDoc* pDoc = Document;
+
+	CRect rectMoon = MoonRectangle;
+
+	CPoint pt = rectMoon.CenterPoint();
+
+	m_OrbitPoints.push_back( pt );
+
+} // AddOrbitalPoint
 
 /////////////////////////////////////////////////////////////////////////////
 // this routine will update the moon's position using time slices
@@ -560,6 +632,9 @@ void CLunarOrbitView::render
 void CLunarOrbitView::UpdateMoonPosition()
 {
 	CLunarOrbitDoc* pDoc = Document;
+
+	// 27 days in seconds
+	const double dSeconds = 27 * 86400;
 
 	// starting positions
 	double dX = pDoc->MoonX;
@@ -584,6 +659,9 @@ void CLunarOrbitView::UpdateMoonPosition()
 	// the number of time slices the day is divided into
 	const int nSamplesPerDay = (int)pDoc->SamplesPerDay;
 
+	// samples per hour
+	const int nSamplesPerHour = nSamplesPerDay / 24;
+
 	// the length of a time slice in seconds
 	const double dSt = pDoc->SampleTime;
 
@@ -594,7 +672,7 @@ void CLunarOrbitView::UpdateMoonPosition()
 	bool bDone = false;
 
 	// loop through the time slices and update positions and velocities
-	for ( int nSample = 0; nSample < nSamplesPerDay; nSample++ )
+	for ( int nSample = 0; nSample < nSamplesPerHour; nSample++ )
 	{
 		// the acceleration of gravity in the X direction
 		const double dAx = -dA * dX / dR;
@@ -614,6 +692,28 @@ void CLunarOrbitView::UpdateMoonPosition()
 		// the new Y position
 		const double dNewY = dY + dVy * dSt;
 
+		// are we doing a single orbit?
+		const bool bSingleOrbit = SingleOrbit;
+
+		// if we are doing a single orbit and we have
+		// exceeded 27 days, start testing for the end
+		// of the orbit
+		if ( bSingleOrbit && dTime > dSeconds )
+		{
+			// difference between the previous X and the new one
+			const double dDelta = dNewX - dX;
+
+			// if the delta is negative, we have reached the beginning
+			// of the orbit
+			if ( dDelta < 0 )
+			{
+				KillTimer( 1 );
+				Running = false;
+				bDone = true;
+				break;
+			}
+		}
+
 		// update the current position for the next time slice
 		dVx = dNewVx;
 		dVy = dNewVy;
@@ -622,15 +722,6 @@ void CLunarOrbitView::UpdateMoonPosition()
 
 		// update the running time
 		dTime += dSt;
-
-		// stop when a lunar cycle completes
-		if ( dTime >= dLunarPeriod )
-		{
-			KillTimer( 1 );
-			Running = false;
-			bDone = true;
-			break;
-		}
 	}
 
 	// record the final result into the document
@@ -640,13 +731,16 @@ void CLunarOrbitView::UpdateMoonPosition()
 	pDoc->VelocityY = dVy;
 	pDoc->RunningTime = dTime;
 
+	// keep track of orbital points
+	AddOrbitalPoint();
+
 	// if we are done, repaint the view
 	if ( bDone )
 	{
 		Invalidate();
 	}
 
-} // UpdateMoonPosition()
+} // UpdateMoonPosition
 
 /////////////////////////////////////////////////////////////////////////////
 BOOL CLunarOrbitView::OnEraseBkgnd( CDC* pDC )
@@ -741,7 +835,7 @@ void CLunarOrbitView::OnVScroll( UINT nSBCode, UINT nPos, CScrollBar* pScrollBar
 /////////////////////////////////////////////////////////////////////////////
 void CLunarOrbitView::OnTimer( UINT_PTR nIDEvent )
 {
-	// update the moon's position and velocity for a day
+	// update the moon's position and velocity
 	UpdateMoonPosition();
 
 	// redraw the view
@@ -755,8 +849,7 @@ void CLunarOrbitView::OnTimer( UINT_PTR nIDEvent )
 // the timer
 void CLunarOrbitView::OnEditPause()
 {
-	Running = false;
-	KillTimer( 1 );
+	OnEditRun();
 
 } // OnEditPause
 
@@ -765,14 +858,13 @@ void CLunarOrbitView::OnEditPause()
 void CLunarOrbitView::OnUpdateEditPause( CCmdUI *pCmdUI )
 {
 	const bool bRunning = Running;
+	pCmdUI->Enable( TRUE );
 	if ( bRunning )
 	{
-		pCmdUI->Enable( TRUE );
 		pCmdUI->SetCheck( FALSE );
 	}
 	else // paused
 	{
-		pCmdUI->Enable( FALSE );
 		pCmdUI->SetCheck( TRUE );
 	}
 } // OnUpdateEditPause
@@ -782,8 +874,17 @@ void CLunarOrbitView::OnUpdateEditPause( CCmdUI *pCmdUI )
 // the timer
 void CLunarOrbitView::OnEditRun()
 {
-	Running = true;
-	SetTimer( 1, 1000, nullptr );
+	const bool bRunning = Running;
+	if ( bRunning )
+	{
+		Running = false;
+		KillTimer( 1 );
+	}
+	else // paused
+	{
+		SetTimer( 1, 10, nullptr );
+		Running = true;
+	}
 
 } // OnEditRun
 
@@ -792,16 +893,38 @@ void CLunarOrbitView::OnEditRun()
 void CLunarOrbitView::OnUpdateEditRun( CCmdUI *pCmdUI )
 {
 	const bool bRunning = Running;
+	pCmdUI->Enable( TRUE );
 	if ( bRunning )
 	{
-		pCmdUI->Enable( FALSE );
 		pCmdUI->SetCheck( TRUE );
 	}
 	else // paused
 	{
-		pCmdUI->Enable( TRUE );
 		pCmdUI->SetCheck( FALSE );
 	}
 } // OnUpdateEditRun
+
+/////////////////////////////////////////////////////////////////////////////
+// toggle single orbit flag
+void CLunarOrbitView::OnEditSingleOrbit()
+{
+	const bool bSingleOrbit = SingleOrbit;
+	if ( bSingleOrbit )
+	{
+		SingleOrbit = false;
+	}
+	else // false
+	{
+		SingleOrbit = true;
+	}
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// single orbit UI handler to check / uncheck the menu item
+void CLunarOrbitView::OnUpdateEditSingleorbit( CCmdUI *pCmdUI )
+{
+	const bool bSingleOrbit = SingleOrbit;
+	pCmdUI->SetCheck( bSingleOrbit == true );
+}
 
 /////////////////////////////////////////////////////////////////////////////

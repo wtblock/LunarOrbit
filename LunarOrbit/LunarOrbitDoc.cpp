@@ -23,17 +23,19 @@ END_MESSAGE_MAP()
 CLunarOrbitDoc::CLunarOrbitDoc()
 {
 	AngleInDegrees = -90;
-	Velocity = -1022;
-	VelocityX = 0;
-	VelocityY = -1022;
-	MetersToMoon = 382500000;
+	Velocity = -1022; // meters per second
+	VelocityX = 0; // meters per second
+	VelocityY = -1022; // meters per second
+	MetersToMoon = 382500000; // meters
 	DistanceScale = 100000000;
 	MoonX = MetersToMoon;
 	MoonY = 0;
+	StartX = MoonX;
+	StartY = 0;
 	SampleTime = 1; // seconds
 	const double dSamplesPerDay = SamplesPerDay;
-	RunningTime = 0;
-	MassOfTheEarth = 5.983e24;
+	RunningTime = 0; // seconds
+	MassOfTheEarth = 5.983e24; // kg
 	const double dLunarPeriod = LunarPeriod;
 }
 

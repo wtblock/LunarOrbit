@@ -19,6 +19,8 @@ protected: // create from serialization only
 	double m_dDistanceScale; // distance scale meters to inches on screen
 	double m_dMoonX; // X coordinate of the moon in meters
 	double m_dMoonY; // Y coordinate of the moon in meters
+	double m_dStartX; // Start X coordinate of the moon in meters
+	double m_dStartY; // Start Y coordinate of the moon in meters
 	double m_dSampleTime; // time in seconds between samples
 	double m_dSamplesPerDay; // number of samples per day
 	double m_dRunningTime; // number of seconds the application has run
@@ -94,7 +96,7 @@ public:
 	// margin of document in inches
 	double GetMargin()
 	{
-		return 1.0;
+		return 0.25;
 	}
 	// margin of document in inches
 	__declspec( property( get = GetMargin ) )
@@ -268,6 +270,34 @@ public:
 	__declspec( property( get = GetMoonY, put = SetMoonY ) )
 		double MoonY;
 
+	// Start X coordinate of the moon in meters
+	double GetStartX()
+	{
+		return m_dStartX;
+	}
+	// Start X coordinate of the moon in meters
+	void SetStartX( double value )
+	{
+		m_dStartX = value;
+	}
+	// Start X coordinate of the moon in meters
+	__declspec( property( get = GetStartX, put = SetStartX ) )
+		double StartX;
+
+	// Start Y coordinate of the moon in meters
+	double GetStartY()
+	{
+		return m_dStartY;
+	}
+	// Start Y coordinate of the moon in meters
+	void SetStartY( double value )
+	{
+		m_dStartY = value;
+	}
+	// Start Y coordinate of the moon in meters
+	__declspec( property( get = GetStartY, put = SetStartY ) )
+		double StartY;
+
 	// time in seconds between samples
 	double GetSampleTime()
 	{
@@ -338,10 +368,6 @@ public:
 public:
 	virtual BOOL OnNewDocument();
 	virtual void Serialize(CArchive& ar);
-#ifdef SHARED_HANDLERS
-	virtual void InitializeSearchContent();
-	virtual void OnDrawThumbnail(CDC& dc, LPRECT lprcBounds);
-#endif // SHARED_HANDLERS
 
 // Implementation
 public:
@@ -356,9 +382,4 @@ protected:
 // Generated message map functions
 protected:
 	DECLARE_MESSAGE_MAP()
-
-#ifdef SHARED_HANDLERS
-	// Helper function that sets search content for a Search Handler
-	void SetSearchContent(const CString& value);
-#endif // SHARED_HANDLERS
 };

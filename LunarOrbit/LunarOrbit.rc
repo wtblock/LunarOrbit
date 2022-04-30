@@ -116,6 +116,8 @@ BEGIN
     BUTTON      ID_EDIT_COPY
     BUTTON      ID_EDIT_PASTE
     SEPARATOR
+    BUTTON      ID_EDIT_SINGLEORBIT
+    SEPARATOR
     BUTTON      ID_EDIT_PAUSE
     BUTTON      ID_EDIT_RUN
     SEPARATOR
@@ -182,6 +184,8 @@ BEGIN
         MENUITEM "Cu&t\tCtrl+X",                ID_EDIT_CUT
         MENUITEM "&Copy\tCtrl+C",               ID_EDIT_COPY
         MENUITEM "&Paste\tCtrl+V",              ID_EDIT_PASTE
+        MENUITEM SEPARATOR
+        MENUITEM "Single Orbit",                ID_EDIT_SINGLEORBIT
         MENUITEM SEPARATOR
         MENUITEM "Pause",                       ID_EDIT_PAUSE, CHECKED
         MENUITEM "Run",                         ID_EDIT_RUN
@@ -466,8 +470,9 @@ END
 
 STRINGTABLE
 BEGIN
-    ID_EDIT_PAUSE           "Pause the model from running"
-    ID_EDIT_RUN             "Start the model running"
+    ID_EDIT_PAUSE           "Pause the model from running\nPause"
+    ID_EDIT_RUN             "Start the model running\nRun"
+    ID_EDIT_SINGLEORBIT     "When enabled, the model stops after a single orbit\nSingle"
 END
 
 #endif    // English (United States) resources

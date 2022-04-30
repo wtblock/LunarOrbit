@@ -4,6 +4,9 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include <vector>
+
+using namespace std;
 
 /////////////////////////////////////////////////////////////////////////////
 class CLunarOrbitView : public CScrollView
@@ -22,6 +25,8 @@ protected: // create from serialization only
 	bool m_bInitialUpdate;
 	int m_nNumPages;
 	bool m_bRunning;
+	bool m_bSingleOrbit;
+	vector<CPoint> m_OrbitPoints;
 
 	// properties
 public:
@@ -194,6 +199,20 @@ public:
 	__declspec( property( get = GetRunning, put = SetRunning ) )
 		bool Running;
 
+	// running?
+	bool GetSingleOrbit()
+	{
+		return m_bSingleOrbit;
+	}
+	// running?
+	void SetSingleOrbit( bool value )
+	{
+		m_bSingleOrbit = value;
+	}
+	// running?
+	__declspec( property( get = GetSingleOrbit, put = SetSingleOrbit ) )
+		bool SingleOrbit;
+
 	// get bottom of view in inches
 	double GetBottomOfView()
 	{
@@ -202,23 +221,6 @@ public:
 	// get bottom of view in inches
 	__declspec( property( get = GetBottomOfView ) )
 		double BottomOfView;
-
-	// angle in degrees of the moon
-	double GetAngleInDegrees()
-	{
-		CLunarOrbitDoc* pDoc = Document;
-		const double value = pDoc->AngleInDegrees;
-		return value;
-	}
-	// angle in degrees of the moon
-	void SetAngleInDegrees( double value )
-	{
-		CLunarOrbitDoc* pDoc = Document;
-		pDoc->AngleInDegrees = value;
-	}
-	// angle in degrees of the moon
-	__declspec( property( get = GetAngleInDegrees, put = SetAngleInDegrees ) )
-		double AngleInDegrees;
 
 	// velocity in meters per second
 	double GetVelocity()
@@ -265,14 +267,57 @@ public:
 	// angle in radians of the moon
 	double GetAngleInRadians()
 	{
-		const double dAngleInDegrees = 90 - AngleInDegrees;
-		const double dAngle = dAngleInDegrees;
-		const double value = Radians( dAngle );
+		// create a rectangle representing the moon 
+		CRect rectMoon = MoonRectangle;
+
+		// center of the moon
+		CPoint ptMoon = rectMoon.CenterPoint();
+
+		// triangle where the hypotenuse is the vector from the 
+		// earth to the moon
+		CPoint ptEarth = EarthCenter;
+
+		const int nX = ptMoon.x - ptEarth.x;
+		const int nY = ptEarth.y - ptMoon.y;
+
+		// length of the hypotenuse using the Pythagorean theorem
+		const double dH = sqrt( double( nX * nX + nY * nY ) );
+
+		// sine of the angle is the opposite / hypotenuse 
+		const double dSine = double( nY ) / dH;
+
+		// angle in radians
+		const double value = asin( dSine );
+
 		return value;
 	}
 	// angle in radians of the moon
 	__declspec( property( get = GetAngleInRadians ) )
 		double AngleInRadians;
+
+	// angle in degrees of the moon
+	double GetAngleInDegrees()
+	{
+		// angle in radians
+		const double dRadians = AngleInRadians;
+
+		// angle in degrees 
+		const double value = Degrees( dRadians );
+
+		// record the angle
+		AngleInDegrees = value;
+
+		return value;
+	}
+	// angle in degrees of the moon
+	void SetAngleInDegrees( double value )
+	{
+		CLunarOrbitDoc* pDoc = Document;
+		pDoc->AngleInDegrees = value;
+	}
+	// angle in degrees of the moon
+	__declspec( property( get = GetAngleInDegrees, put = SetAngleInDegrees ) )
+		double AngleInDegrees;
 
 	// distance to goal in meters
 	double GetMetersToMoon()
@@ -499,6 +544,9 @@ public:
 
 	// protected methods
 protected:
+	// add the current moon position to the historical points of the lunar orbit
+	void AddOrbitalPoint();
+
 	// update the position of the moon for a day
 	void UpdateMoonPosition();
 
@@ -593,6 +641,8 @@ public:
 	afx_msg void OnUpdateEditPause( CCmdUI *pCmdUI );
 	afx_msg void OnEditRun();
 	afx_msg void OnUpdateEditRun( CCmdUI *pCmdUI );
+	afx_msg void OnEditSingleOrbit();
+	afx_msg void OnUpdateEditSingleorbit( CCmdUI *pCmdUI );
 };
 
 #ifndef _DEBUG  // debug version in LunarOrbitView.cpp
