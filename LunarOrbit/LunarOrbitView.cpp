@@ -385,66 +385,47 @@ void CLunarOrbitView::BuildFont
 } // BuildFont
 
 /////////////////////////////////////////////////////////////////////////////
-// render the page or view
-void CLunarOrbitView::render
-(
-	CDC* pDC, double dTopOfView, double dBottomOfView, int nLogicalWidth
-)
+// render the lunar orbit 
+void CLunarOrbitView::RenderLunarOrbit( CDC * pDC )
 {
-	CLunarOrbitDoc* pDoc = Document;
-	const UINT nPages = pDoc->Pages;
-	double dTopOfPage = 0;
-
-	// create a pen to draw with
-	CPen penGray, penRed, penBlue;
-
-	// save the entry state
-	const int nDC = pDC->SaveDC();
-
 	// 1 hundredths of an inch
 	const int nGrayWidth = InchesToLogical( 0.01 );
-
-	// 2 hundredths of an inch
-	const int nRedWidth = InchesToLogical( 0.02 );
-
-	// 5 hundredth of an inch
-	const int nBlueWidth = InchesToLogical( 0.05 );
-
-	// 0.12 inch size
-	const int nTextHeight = InchesToLogical( 0.18 );
 
 	// gray color
 	const COLORREF rgbGray = RGB( 128, 128, 128 );
 
-	// red color
-	const COLORREF rgbRed = RGB( 255, 0, 0 );
-
-	// green color
-	const COLORREF rgbGreen = RGB( 0, 255, 0 );
-
-	// blue color
-	const COLORREF rgbBlue = RGB( 0, 0, 255 );
-
 	// create a solid gray pen 0.05 inches wide
+	CPen penGray;
 	penGray.CreatePen( PS_SOLID, nGrayWidth, rgbGray );
 
-	// create a solid blue pen 0.05 inches wide
-	penBlue.CreatePen( PS_SOLID, nBlueWidth, rgbBlue );
+	CPen* pOld = pDC->SelectObject( &penGray );
 
-	// create a solid red pen 0.02 inches wide
-	penRed.CreatePen( PS_SOLID, nRedWidth, rgbRed );
+	// draw historical moon images and orbital path
+	const size_t nPoints = m_OrbitPoints.size();
+	if ( nPoints != 0 )
+	{
+		pDC->Polyline( &m_OrbitPoints[ 0 ], (int)nPoints );
+	}
 
-	// create a green and gray brush
-	CBrush brGreen, brGray;
+	pDC->SelectObject( pOld );
 
-	// create a green brush
-	brGreen.CreateSolidBrush( rgbGreen );
+} // RenderLunarOrbit
 
-	// create a gray brush
-	brGray.CreateSolidBrush( rgbGray );
+/////////////////////////////////////////////////////////////////////////////
+// render the equations of motion
+void CLunarOrbitView::RenderEquations( CDC * pDC )
+{
+	// pointer to the document information
+	CLunarOrbitDoc* pDoc = Document;
 
-	CBrush brNull;
-	brNull.CreateStockObject( NULL_BRUSH );
+	// margin around the document in logical pixels (device independent)
+	const int nMargin = LogicalDocumentMargin;
+
+	// text color is blue
+	COLORREF rgbBlue( RGB( 0, 0, 255 ) );
+
+	// 0.12 inch size
+	const int nTextHeight = InchesToLogical( 0.25 );
 
 	// create a font for text output
 	CFont font;
@@ -453,10 +434,109 @@ void CLunarOrbitView::render
 		_T( "Arial" ), false, false, nTextHeight, false, font
 	);
 
-	// setting labels
-	CString csAngle, csVelocity, csVelocityX, csVelocityY,
-		csDistance, csMoonX, csMoonY, 
-		csSample, csSamplesPerDay, csRunningTime;
+	// labels for information to be displayed on the output device
+	CString csText
+	(
+		_T( "Newton's first equation of motion:\n \n" )
+		_T( "    v = u + at\n \n" )
+		_T( "Newton's second equation of motion:\n \n" )
+		_T( "    s = ut + ½at²\n \n")
+		_T( "where v is final velocity, u is initial velocity,\n" )
+		_T( "    s is final position, a is acceleration, and t is time.")
+	);
+	
+	// prepare the device context
+	CFont* pOldFont = pDC->SelectObject( &font );
+	const int nTA = pDC->SetTextAlign( TA_LEFT | TA_BASELINE );
+	COLORREF rgbOld = pDC->SetTextColor( rgbBlue );
+
+	// document dimensions
+	const int nDocWidth = InchesToLogical( DocumentWidth );
+	const int nDocHeight = InchesToLogical( DocumentHeight );
+
+	// left justified to the left margin
+	int nX = 2 * nMargin;
+	int nY = 2 * nMargin;
+
+	const CString csDelim( _T( "\n" ));
+	int nStart = 0;
+
+	// tokenize the string using line feeds as delimiters
+	// and exit when the token is empty
+	do
+	{
+		const CString csToken = csText.Tokenize( csDelim, nStart );
+		if ( csToken.IsEmpty() )
+		{
+			break;
+		}
+
+		// draw the equation text one line at a time
+		pDC->TextOut( nX, nY, csToken );
+
+		// move to next line
+		nY += nTextHeight;
+
+	} while ( true );
+
+	// restore the device context
+	pDC->SetTextColor( rgbOld );
+	pDC->SetTextAlign( nTA );
+	pDC->SelectObject( pOldFont );
+
+} // RenderEquations
+
+/////////////////////////////////////////////////////////////////////////////
+// render the text information
+void CLunarOrbitView::RenderText( CDC * pDC )
+{
+	// pointer to the document information
+	CLunarOrbitDoc* pDoc = Document;
+
+	// margin around the document in logical pixels (device independent)
+	const int nMargin = LogicalDocumentMargin;
+
+	// 0.12 inch size
+	const int nTextHeight = InchesToLogical( 0.25 );
+
+	// text color
+	COLORREF rgbText( RGB( 0, 128, 0 ));
+
+	// create a font for text output
+	CFont font;
+	BuildFont
+	(
+		_T( "Arial" ), false, false, nTextHeight, false, font
+	);
+
+	// labels for information to be displayed on the output device
+	CString 
+		csMassOfEarth,
+		csGravity, csGravityX, csGravityY,
+		csVelocity, csVelocityX, csVelocityY,
+		csDistance, csMoonX, csMoonY,
+		csSample, csSamplesPerDay, csRunningTime, csAngle;
+	
+	csMassOfEarth.Format
+	(
+		_T( "Mass of the earth in kilograms: %g" ), 
+		pDoc->MassOfTheEarth
+	);
+	csGravity.Format
+	(
+		_T( "Gravity in meters per second squared: %g" ), 
+		pDoc->AccelerationOfGravity
+	);
+	csGravityX.Format
+	(
+		_T( "X-gravity in meters per second squared: %g" ),
+		pDoc->GravityX
+	);
+	csGravityY.Format
+	(
+		_T( "Y-gravity in meters per second squared: %g" ),
+		pDoc->GravityY
+	);
 	csVelocity.Format
 	(
 		_T( "Initial velocity in meters per second: %0.0f" ), Velocity
@@ -473,7 +553,7 @@ void CLunarOrbitView::render
 	);
 	csDistance.Format
 	(
-		_T( "Distance to moon in meters: %0.0f" ), MetersToMoon
+		_T( "Distance to moon in meters: %0.0f" ), MoonDistance
 	);
 	csMoonX.Format
 	(
@@ -492,67 +572,33 @@ void CLunarOrbitView::render
 	(
 		_T( "Samples per day: %0.0f" ), pDoc->SamplesPerDay
 	);
+
+	// running time is in seconds, so divide by the number of seconds in a day
+	// to display the running time in days
 	csRunningTime.Format
 	(
 		_T( "Running time in days: %0.01f" ), pDoc->RunningTime / 86400
 	);
 
-	const double dPageHeight = PageHeight;
-	const double dBottomOfPage = dTopOfPage + dPageHeight;
+	// prepare the device context
+	CFont* pOldFont = pDC->SelectObject( &font );
+	const int nTA = pDC->SetTextAlign( TA_RIGHT | TA_BASELINE );
+	COLORREF rgbOld = pDC->SetTextColor( rgbText );
 
-	// distance from top of view to top of page, where a positive value
-	// indicates the page is partially below the view
-	const double dPageOffset = dTopOfPage - dTopOfView;
-	const int nPageOffset = InchesToLogical( dPageOffset );
-	const int nLogicalPageHeight = InchesToLogical( dPageHeight );
+	// center of the earth on the document
+	CPoint ptEarth = EarthCenter;
 
-	// account for the shift of the view due to scrolling or printed pages
-	pDC->SetWindowOrg( 0, -nPageOffset );
-
-	// gray line for the axes
-	pDC->SelectObject( &penGray );
-
-	// draw historical moon images and orbital path
-	const size_t nPoints = m_OrbitPoints.size();
-	if ( nPoints != 0 )
-	{
-		pDC->Polyline( &m_OrbitPoints[ 0 ], (int)nPoints );
-	}
-
-	// draw settings information
-	pDC->SelectObject( &font );
-	pDC->SetTextAlign( TA_RIGHT | TA_BASELINE );
-
-	const int nMargin = LogicalDocumentMargin;
-
-	// draw the X and Y axes
+	// document dimensions
 	const int nDocWidth = InchesToLogical( DocumentWidth );
 	const int nDocHeight = InchesToLogical( DocumentHeight );
-	CPoint ptEarth = EarthCenter;
-	int nX1 = ptEarth.x - nMargin * 20;
-	int nY1 = ptEarth.y - nMargin * 16;
-	int nX2 = ptEarth.x + nMargin * 20;
-	int nY2 = ptEarth.y + nMargin * 16;
-	for ( int nX = nX1; nX <= nX2; nX += 4 * nMargin )
-	{
-		pDC->MoveTo( nX, nY1 );
-		pDC->LineTo( nX, nY2 );
-	}
-	for ( int nY = nY1; nY <= nY2; nY += 4 * nMargin )
-	{
-		pDC->MoveTo( nX1, nY );
-		pDC->LineTo( nX2, nY );
-	}
-
-	pDC->TextOut( nMargin, ptEarth.y, _T( "X" ) );
-	pDC->TextOut( nDocWidth - nMargin, ptEarth.y, _T( "X" ) );
-	pDC->TextOut( ptEarth.x, nMargin, _T( "Y" ) );
-	pDC->TextOut( ptEarth.x, nTextHeight + nDocHeight - nMargin, _T( "Y" ) );
 
 	// right justified to the right margin
 	int nX = LogicalDocumentWidth - 2 * nMargin;
 	int nY = 2 * nMargin;
 
+	// draw the textual information one line at a time
+	pDC->TextOut( nX, nY, csMassOfEarth );
+	nY += nTextHeight;
 	pDC->TextOut( nX, nY, csDistance );
 	nY += nTextHeight;
 	pDC->TextOut( nX, nY, csMoonX );
@@ -565,6 +611,12 @@ void CLunarOrbitView::render
 	nY += nTextHeight;
 	pDC->TextOut( nX, nY, csVelocityY );
 	nY += nTextHeight;
+	pDC->TextOut( nX, nY, csGravity );
+	nY += nTextHeight;
+	pDC->TextOut( nX, nY, csGravityX );
+	nY += nTextHeight;
+	pDC->TextOut( nX, nY, csGravityY );
+	nY += nTextHeight;
 	pDC->TextOut( nX, nY, csAngle );
 	nY += nTextHeight;
 	pDC->TextOut( nX, nY, csSample );
@@ -574,21 +626,226 @@ void CLunarOrbitView::render
 	pDC->TextOut( nX, nY, csRunningTime );
 	nY += nTextHeight;
 
+	// labels beside the grid
+	COLORREF rgbScale( RGB( 255, 0, 0 ));
+	const CString csLabelX( _T( "X (Inches)" ));
+	const CString csLabelY( _T( "Y (Inches)" ) );
+
+	pDC->SetTextColor( rgbScale );
+	pDC->SetTextAlign( TA_CENTER | TA_BOTTOM );
+	pDC->TextOut( ptEarth.x, nMargin, csLabelX );
+	pDC->TextOut( ptEarth.x, nDocHeight - nMargin, csLabelX );
+	
+	// create a font for vertical text output
+	CFont fontY;
+	BuildFont
+	(
+		_T( "Arial" ), false, false, nTextHeight, true, fontY
+	);
+	pDC->SelectObject( &fontY );
+	pDC->SetTextAlign( TA_CENTER | TA_BOTTOM );
+
+	pDC->TextOut( nMargin - nTextHeight, ptEarth.y, csLabelY );
+	pDC->TextOut( nDocWidth - nMargin, ptEarth.y, csLabelY );
+
+	// restore the device context
+	pDC->SetTextColor( rgbOld );
+	pDC->SetTextAlign( nTA );
+	pDC->SelectObject( pOldFont );
+
+} // RenderText
+
+/////////////////////////////////////////////////////////////////////////////
+// render the grid
+void CLunarOrbitView::RenderGrid( CDC * pDC )
+{
+	// gray color
+	const COLORREF rgbGray = RGB( 128, 128, 128 );
+
+	// 1 hundredths of an inch
+	const int nGrayWidth = InchesToLogical( 0.01 );
+
+	// gray pen
+	CPen penGray;
+
+	// create a solid gray pen 0.05 inches wide
+	penGray.CreatePen( PS_SOLID, nGrayWidth, rgbGray );
+
+	// setup the device context
+	CPen* pOld = pDC->SelectObject( &penGray );
+
+	// document dimensions in logical pixels (device independent)
+	const int nDocWidth = InchesToLogical( DocumentWidth );
+	const int nDocHeight = InchesToLogical( DocumentHeight );
+	
+	// center point of the earth
+	CPoint ptEarth = EarthCenter;
+	
+	// margin around the document in logical pixels (device independent)
+	// based on a 1/4" margin
+	const int nMargin = LogicalDocumentMargin;
+
+	// drawing limits
+	int nX1 = ptEarth.x - nMargin * 20; // 20 margins left of center
+	int nX2 = ptEarth.x + nMargin * 20; // 20 margins right of center
+	int nY1 = ptEarth.y - nMargin * 16; // 16 margins above center
+	int nY2 = ptEarth.y + nMargin * 16; // 16 margins below center
+
+	// draw vertical grid lines every 4 margins (every inch)
+	for ( int nX = nX1; nX <= nX2; nX += 4 * nMargin )
+	{
+		pDC->MoveTo( nX, nY1 );
+		pDC->LineTo( nX, nY2 );
+	}
+
+	// draw horizontal grid lines every 4 margins (every inch)
+	for ( int nY = nY1; nY <= nY2; nY += 4 * nMargin )
+	{
+		pDC->MoveTo( nX1, nY );
+		pDC->LineTo( nX2, nY );
+	}
+
+	// restore the device context
+	pDC->SelectObject( pOld );
+
+} // RenderGrid
+
+/////////////////////////////////////////////////////////////////////////////
+// render the scale labels in inches
+void CLunarOrbitView::RenderScale( CDC * pDC )
+{
+	// pointer to the document information
+	CLunarOrbitDoc* pDoc = Document;
+
+	// margin around the document in logical pixels (device independent)
+	const int nMargin = LogicalDocumentMargin;
+
+	// text color
+	COLORREF rgbText( RGB( 255, 0, 0 ) );
+
+	// 0.12 inch size
+	const int nTextHeight = InchesToLogical( 0.18 );
+
+	// create a font for text output
+	CFont font;
+	BuildFont
+	(
+		_T( "Arial" ), false, false, nTextHeight, false, font
+	);
+
+	// center of the earth on the document
+	CPoint ptEarth = EarthCenter;
+
+	// drawing limits
+	int nX1 = ptEarth.x - nMargin * 20; // 20 margins left of center
+	int nX2 = ptEarth.x + nMargin * 20; // 20 margins right of center
+	int nY1 = ptEarth.y - nMargin * 16; // 16 margins above center
+	int nY2 = ptEarth.y + nMargin * 16; // 16 margins below center
+
+	// draw X scale labels every 4 margins (every inch)
+	// prepare the device context
+	CFont* pOldFont = pDC->SelectObject( &font );
+	const int nTA = pDC->SetTextAlign( TA_CENTER | TA_TOP );
+	COLORREF rgbOld = pDC->SetTextColor( rgbText );
+
+	CString csValue;
+	for ( int nX = nX1; nX <= nX2; nX += 4 * nMargin )
+	{
+		const double dValue = LogicalToInches( nX - 2 * nMargin );
+		csValue.Format( _T( "%0.0f" ), dValue );
+		pDC->TextOut( nX, nY2, csValue );
+	}
+
+	// draw Y scale labels every 4 margins (every inch)
+	// create a font for vertical text output
+	CFont fontY;
+	BuildFont
+	(
+		_T( "Arial" ), false, false, nTextHeight, true, fontY
+	);
+	pDC->SelectObject( &fontY );
+	pDC->SetTextAlign( TA_CENTER | TA_TOP );
+	for ( int nY = nY1; nY <= nY2; nY += 4 * nMargin )
+	{
+		const double dValue = LogicalToInches( nY - nMargin );
+		csValue.Format( _T( "%0.0f" ), dValue );
+		pDC->TextOut( nX1, nY, csValue );
+	}
+
+	// restore the device context
+	pDC->SetTextColor( rgbOld );
+	pDC->SetTextAlign( nTA );
+	pDC->SelectObject( pOldFont );
+
+} // RenderScale
+
+/////////////////////////////////////////////////////////////////////////////
+// render the moon
+void CLunarOrbitView::RenderMoon( CDC * pDC )
+{
+	// gray color
+	const COLORREF rgbGray = RGB( 128, 128, 128 );
+
+	// 1 hundredths of an inch
+	const int nGrayWidth = InchesToLogical( 0.01 );
+
+	// gray pen to draw the moon's circumference
+	CPen penGray;
+
+	// create a solid gray pen 0.05 inches wide
+	penGray.CreatePen( PS_SOLID, nGrayWidth, rgbGray );
+
+	// setup the device context
+	CPen* pPenOld = pDC->SelectObject( &penGray );
+
+	// a gray brush to fill the moon's interior
+	CBrush brGray;
+
+	// create a gray brush
+	brGray.CreateSolidBrush( rgbGray );
+
 	// color the moon gray
-	pDC->SelectObject( &brGray );
+	CBrush* pBrOld = pDC->SelectObject( &brGray );
 
 	// create a rectangle representing the moon 
 	CRect rectMoon = MoonRectangle;
 
-	// center point of the moon
-	CPoint ptMoon = MoonCenter;
-
 	// draw the moon as an ellipse that fits into the rectangle
 	pDC->Ellipse( &rectMoon );
 
+	// restore the device context
+	pDC->SelectObject( pPenOld );
+	pDC->SelectObject( pBrOld );
+
+} // RenderMoon
+
+/////////////////////////////////////////////////////////////////////////////
+void CLunarOrbitView::RenderEarth( CDC * pDC )
+{
+	// 5 hundredth of an inch
+	const int nBlueWidth = InchesToLogical( 0.05 );
+
+	// green color
+	const COLORREF rgbGreen = RGB( 0, 255, 0 );
+
+	// blue color
+	const COLORREF rgbBlue = RGB( 0, 0, 255 );
+
+	// create a pen to draw the earth's circumference 
+	CPen penBlue;
+
+	// create a solid blue pen 0.05 inches wide
+	penBlue.CreatePen( PS_SOLID, nBlueWidth, rgbBlue );
+
+	// create a green brush to fill the earth's shape
+	CBrush brGreen;
+
+	// create a green brush
+	brGreen.CreateSolidBrush( rgbGreen );
+
 	// colors of the earth
-	pDC->SelectObject( &penBlue );
-	pDC->SelectObject( &brGreen );
+	CPen* pPenOld = pDC->SelectObject( &penBlue );
+	CBrush* pBrOld = pDC->SelectObject( &brGreen );
 
 	// create a rectangle representing the earth 
 	CRect rectEarth = EarthRectangle;
@@ -596,8 +853,41 @@ void CLunarOrbitView::render
 	// draw the earth as an ellipse that fits into the rectangle
 	pDC->Ellipse( &rectEarth );
 
+	// restore the device context
+	pDC->SelectObject( pPenOld );
+	pDC->SelectObject( pBrOld );
+
+} // RenderEarth
+
+/////////////////////////////////////////////////////////////////////////////
+// render the earth / moon triangle - the earth's acceleration is 
+// applied toward's the earth along the triangle's hypotenuse, but
+// in order to calculate velocity and position of the moon that 
+// gravitational attraction needs to be broken into a vertical and
+// horizontal vector represented by the sides of the right triangle
+void CLunarOrbitView::RenderTriangle( CDC* pDC )
+{
+	// 2 hundredths of an inch
+	const int nRedWidth = InchesToLogical( 0.02 );
+
+	// red color
+	const COLORREF rgbRed = RGB( 255, 0, 0 );
+
+	// create a pen to draw with
+	CPen penRed;
+
+	// create a solid red pen 0.02 inches wide
+	penRed.CreatePen( PS_SOLID, nRedWidth, rgbRed );
+
+	CPen* pPenOld = pDC->SelectObject( &penRed );
+
 	// draw hypotenuse of triangle
-	pDC->SelectObject( &penRed );
+	CPoint ptEarth = EarthCenter;
+
+	// center point of the moon
+	CPoint ptMoon = MoonCenter;
+
+	// draw the hypotenuse of the right triangle (radius of orbit)
 	pDC->MoveTo( ptMoon );
 	pDC->LineTo( ptEarth );
 
@@ -608,7 +898,58 @@ void CLunarOrbitView::render
 	pDC->LineTo( ptMoon );
 
 	// restore the device context
-	pDC->RestoreDC( nDC );
+	pDC->SelectObject( pPenOld );
+
+} // RenderTriangle
+
+/////////////////////////////////////////////////////////////////////////////
+// render the page or view
+void CLunarOrbitView::render
+(
+	CDC* pDC, double dTopOfView, double dBottomOfView, int nLogicalWidth
+)
+{
+	double dTopOfPage = 0;
+
+	const double dPageHeight = PageHeight;
+	const double dBottomOfPage = dTopOfPage + dPageHeight;
+
+	// distance from top of view to top of page, where a positive value
+	// indicates the page is partially below the view
+	const double dPageOffset = dTopOfPage - dTopOfView;
+
+	// logical coordinates allow the drawing to be device independent
+	// i.e. rendering works on the screen as well as printing and print
+	// preview
+	const int nPageOffset = InchesToLogical( dPageOffset );
+	const int nLogicalPageHeight = InchesToLogical( dPageHeight );
+
+	// account for the shift of the view due to scrolling or printed pages
+	pDC->SetWindowOrg( 0, -nPageOffset );
+
+	// draw the lunar orbit up to this point in time
+	RenderLunarOrbit( pDC );
+
+	// render Newton's equations of motion
+	RenderEquations( pDC );
+
+	// draw the textual information 
+	RenderText( pDC );
+
+	// draw the document grid
+	RenderGrid( pDC );
+
+	// draw the X and Y scale labels
+	RenderScale( pDC );
+
+	// draw the moon's shape
+	RenderMoon( pDC );
+
+	// draw the earth's shape
+	RenderEarth( pDC );
+
+	// draw the earth moon triangle 
+	RenderTriangle( pDC );
 
 } // render
 
@@ -644,8 +985,13 @@ void CLunarOrbitView::UpdateMoonPosition()
 	double dVx = pDoc->VelocityX;
 	double dVy = pDoc->VelocityY;
 
-	// acceleration of earth's gravity on the moon
+	// acceleration of earth's gravity on the moon is
+	// calculated using Newton's equation
 	const double dA = pDoc->AccelerationOfGravity;
+
+	// starting acceleration of gravity
+	double dAx = pDoc->GravityX;
+	double dAy = pDoc->GravityY;
 
 	// the time the model has been run in seconds
 	double dTime = pDoc->RunningTime;
@@ -654,7 +1000,7 @@ void CLunarOrbitView::UpdateMoonPosition()
 	const double dM = pDoc->MassOfTheEarth;
 
 	// the distance to the moon in meters
-	const double dR = MetersToMoon;
+	const double dR = MoonDistance;
 
 	// the number of time slices the day is divided into
 	const int nSamplesPerDay = (int)pDoc->SamplesPerDay;
@@ -665,31 +1011,35 @@ void CLunarOrbitView::UpdateMoonPosition()
 	// the length of a time slice in seconds
 	const double dSt = pDoc->SampleTime;
 
-	// the known lunar period in seconds
-	const double dLunarPeriod = pDoc->LunarPeriod;
-
 	// are we done with a complete cycle
 	bool bDone = false;
 
 	// loop through the time slices and update positions and velocities
+	// using Newton's equations of motion
 	for ( int nSample = 0; nSample < nSamplesPerHour; nSample++ )
 	{
-		// the acceleration of gravity in the X direction
-		const double dAx = -dA * dX / dR;
+		// the acceleration of gravity in the X direction using 
+		// right triangle proportion
+		const double dNewAx = -dA * dX / dR;
 
-		// the acceleration of gravity in the Y direction
-		const double dAy = -dA * dY / dR;
+		// the acceleration of gravity in the Y direction using 
+		// right triangle proportion
+		const double dNewAy = -dA * dY / dR;
 
-		// the new velocity in the X direction
-		const double dNewVx = dVx + dAx * dSt;
+		// the new X velocity in the X direction is the original X velocity
+		// plus X acceleration multiplied by the time increment
+		const double dNewVx = dVx + dNewAx * dSt;
 
-		// the new velocity in the Y direction
-		const double dNewVy = dVy + dAy * dSt;
+		// the new Y velocity in the Y direction is the original Y velocity
+		// plus Y acceleration multiplied by the time increment
+		const double dNewVy = dVy + dNewAy * dSt;
 
-		// the new X position 
+		// the new X position is the original X position plus the X velocity
+		// multiplied by the time increment
 		const double dNewX = dX + dVx * dSt;
 
-		// the new Y position
+		// the new Y position is the original Y position plus the Y velocity
+		// multiplied by the time increment
 		const double dNewY = dY + dVy * dSt;
 
 		// are we doing a single orbit?
@@ -697,7 +1047,8 @@ void CLunarOrbitView::UpdateMoonPosition()
 
 		// if we are doing a single orbit and we have
 		// exceeded 27 days, start testing for the end
-		// of the orbit
+		// of the orbit (so the testing only is done when
+		// we are close to the expected result)
 		if ( bSingleOrbit && dTime > dSeconds )
 		{
 			// difference between the previous X and the new one
@@ -714,7 +1065,10 @@ void CLunarOrbitView::UpdateMoonPosition()
 			}
 		}
 
-		// update the current position for the next time slice
+		// update the current acceleration, velocity and 
+		// position for the next time slice
+		dAx = dNewAx;
+		dAy = dNewAy;
 		dVx = dNewVx;
 		dVy = dNewVy;
 		dX = dNewX;
@@ -724,11 +1078,13 @@ void CLunarOrbitView::UpdateMoonPosition()
 		dTime += dSt;
 	}
 
-	// record the final result into the document
-	pDoc->MoonX = dX;
-	pDoc->MoonY = dY;
-	pDoc->VelocityX = dVx;
-	pDoc->VelocityY = dVy;
+	// record the final vector results into the document
+	pDoc->MoonX = dX; // X distance
+	pDoc->MoonY = dY; // Y distance
+	pDoc->VelocityX = dVx; // X velocity
+	pDoc->VelocityY = dVy; // Y velocity
+	pDoc->GravityX = dAx; // X gravity
+	pDoc->GravityY = dAy; // Y gravity
 	pDoc->RunningTime = dTime;
 
 	// keep track of orbital points

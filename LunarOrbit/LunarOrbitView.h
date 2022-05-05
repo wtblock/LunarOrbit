@@ -241,10 +241,23 @@ public:
 	// horizontal velocity in meters per second
 	double GetHorizontalVelocity()
 	{
+		// earth moon angle in radians forming the triangle
+		// on the display
 		const double dRadians = AngleInRadians;
+
+		// the velocity corresponds to the hypotenuse of the
+		// triangle 
 		const double dVelocity = Velocity;
-		const double dSine = sin( dRadians );
-		const double value = dVelocity * dSine;
+
+
+		// we are interested in the vector adjacent to the
+		// angle which requires the cosine of the angle
+		const double dCosine = cos( dRadians );
+
+		// the cosine of the angle multiplied by the velocity (hypotenuse 
+		// of the triangle) yields the horizontal velocity (side adjacent
+		// to the angle)
+		const double value = dVelocity * dCosine;
 		return value;
 	}
 	// horizontal velocity in meters per second
@@ -254,10 +267,22 @@ public:
 	// vertical velocity in meters per second
 	double GetVerticalVelocity()
 	{
+		// earth moon angle in radians forming the triangle
+		// on the display
 		const double dRadians = AngleInRadians;
+
+		// the velocity corresponds to the hypotenuse of the
+		// triangle 
 		const double dVelocity = Velocity;
-		const double dCosine = cos( dRadians );
-		const double value = dVelocity * dCosine;
+
+		// we are interested in the vector opposite of the
+		// angle which requires the sine of the angle
+		const double dSine = sin( dRadians );
+
+		// the sine of the angle multiplied by the velocity (hypotenuse 
+		// of the triangle) yields the vertical velocity (side opposite
+		// of the angle)
+		const double value = dVelocity * dSine;
 		return value;
 	}
 	// vertical velocity in meters per second
@@ -267,26 +292,34 @@ public:
 	// angle in radians of the moon
 	double GetAngleInRadians()
 	{
-		// create a rectangle representing the moon 
-		CRect rectMoon = MoonRectangle;
-
-		// center of the moon
-		CPoint ptMoon = rectMoon.CenterPoint();
+		// center of the moon on the screen
+		CPoint ptMoon = MoonCenter;
 
 		// triangle where the hypotenuse is the vector from the 
 		// earth to the moon
 		CPoint ptEarth = EarthCenter;
 
+		// difference between the moon's center X and the earth's center X
 		const int nX = ptMoon.x - ptEarth.x;
+
+		// same for Y except NOTE the reverse order. This is due to 
+		// our inverted coordinate system from standard Cartesian
+		// coordinates (our Y gets larger as you go down instead of
+		// getting larger when you go up) which has to be accounted
+		// for when doing trigonometry. Our logical coordinate system
+		// is setup by the SetDrawDC and SetPrintDC in order to make
+		// all drawing device independent where DC stands for device
+		// context.
 		const int nY = ptEarth.y - ptMoon.y;
 
 		// length of the hypotenuse using the Pythagorean theorem
+		// i.e. square root of the sum of the squares of the sides
 		const double dH = sqrt( double( nX * nX + nY * nY ) );
 
-		// sine of the angle is the opposite / hypotenuse 
+		// sine of the angle is the ratio of the opposite side / hypotenuse 
 		const double dSine = double( nY ) / dH;
 
-		// angle in radians
+		// angle in radians is the arc sine of the sine of the angle
 		const double value = asin( dSine );
 
 		return value;
@@ -319,22 +352,22 @@ public:
 	__declspec( property( get = GetAngleInDegrees, put = SetAngleInDegrees ) )
 		double AngleInDegrees;
 
-	// distance to goal in meters
-	double GetMetersToMoon()
+	// distance to moon in meters from earth
+	double GetMoonDistance()
 	{
 		CLunarOrbitDoc* pDoc = Document;
-		const double value = pDoc->MetersToMoon;
+		const double value = pDoc->MoonDistance;
 		return value;
 	}
-	// distance to goal in meters
-	void SetMetersToMoon( double value )
+	// distance to moon in meters from earth
+	void SetMoonDistance( double value )
 	{
 		CLunarOrbitDoc* pDoc = Document;
-		pDoc->MetersToMoon = value;
+		pDoc->MoonDistance = value;
 	}
-	// distance to goal in meters
-	__declspec( property( get = GetMetersToMoon, put = SetMetersToMoon ) )
-		double MetersToMoon;
+	// distance to moon in meters from earth
+	__declspec( property( get = GetMoonDistance, put = SetMoonDistance ) )
+		double MoonDistance;
 
 	// time in seconds between samples
 	double GetSampleTime()
@@ -353,18 +386,17 @@ public:
 	__declspec( property( get = GetSampleTime, put = SetSampleTime ) )
 		double SampleTime;
 
-	// meters per inch scale
-	double GetMetersPerInch()
+	// lunar distance scale meters to inches on screen
+	double GetMoonScaling()
 	{
-		const double dMeters = MetersToMoon;
-		const double dMargin = DocumentMargin;
-		const double dInches = DocumentWidth - 2 * dMargin;
-		const double value = dMeters / dInches;
+		CLunarOrbitDoc* pDoc = Document;
+		
+		const double value = pDoc->MoonScaling;
 		return value;
 	}
-	// meters per inch scale
-	__declspec( property( get = GetMetersPerInch ) )
-		double MetersPerInch;
+	// lunar distance scale meters to inches on screen
+	__declspec( property( get = GetMoonScaling, put = SetMoonScaling ) )
+		double MoonScaling;
 
 	// point defining the earth's center
 	CPoint GetEarthCenter()
@@ -420,8 +452,8 @@ public:
 
 		// x and y coordinates of the moon relative to the earth
 		// in screen inches
-		const double dInchesX = pDoc->ScreenInches[ dMetersX ];
-		const double dInchesY = pDoc->ScreenInches[ dMetersY ];
+		const double dInchesX = pDoc->MoonScreenInches[ dMetersX ];
+		const double dInchesY = pDoc->MoonScreenInches[ dMetersY ];
 
 		// x and y coordinates of the moon relative to the earth
 		// in logical pixels
@@ -549,6 +581,34 @@ protected:
 
 	// update the position of the moon for a day
 	void UpdateMoonPosition();
+
+	// render the lunar orbit 
+	void RenderLunarOrbit( CDC* pDC );
+
+	// render the equations of motion
+	void RenderEquations( CDC* pDC );
+
+	// render the text information
+	void RenderText( CDC* pDC );
+
+	// render the grid
+	void RenderGrid( CDC* pDC );
+
+	// render the scale labels in inches
+	void RenderScale( CDC* pDC );
+
+	// render the moon's shape
+	void RenderMoon( CDC* pDC );
+
+	// render the earth's shape
+	void RenderEarth( CDC* pDC );
+
+	// render the earth / moon triangle - the earth's acceleration is 
+	// applied toward's the earth along the triangle's hypotenuse, but
+	// in order to calculate velocity and position of the moon that 
+	// gravitational attraction needs to be broken into a vertical and
+	// horizontal vectors represented by the sides of the right triangle
+	void RenderTriangle( CDC* pDC );
 
 	// render the page or view
 	void render

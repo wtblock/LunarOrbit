@@ -15,8 +15,9 @@ protected: // create from serialization only
 	double m_dVelocity; // velocity in meters per second
 	double m_dVelocityX; // X velocity in meters per second
 	double m_dVelocityY; // Y velocity in meters per second
-	double m_dMetersToMoon; // distance to moon in meters
-	double m_dDistanceScale; // distance scale meters to inches on screen
+	double m_dMoonDistance; // distance to moon in meters
+	double m_dMoonInches; // distance to the moon from earth on screen
+	double m_dMoonScaling; // distance scale meters to inches on screen
 	double m_dMoonX; // X coordinate of the moon in meters
 	double m_dMoonY; // Y coordinate of the moon in meters
 	double m_dStartX; // Start X coordinate of the moon in meters
@@ -27,6 +28,8 @@ protected: // create from serialization only
 	double m_dMassOfTheEarth; // mass of the earth in kilograms
 	double m_dLunarPeriod; // period of the lunar orbit in seconds
 	double m_dAccelerationOfGravity; // meters per second squared
+	double m_dGravityX; // X Vector of the acceleration of gravity
+	double m_dGravityY; // Y Vector of the acceleration of gravity
 
 // properties
 public:
@@ -158,19 +161,62 @@ public:
 	__declspec( property( get = GetVelocityY, put = SetVelocityY ) )
 		double VelocityY;
 
-	// distance to moon in meters
-	double GetMetersToMoon()
+	// distance to moon in meters from earth
+	double GetMoonDistance()
 	{
-		return m_dMetersToMoon;
+		return m_dMoonDistance;
 	}
-	// distance to moon in meters
-	void SetMetersToMoon( double value )
+	// distance to moon in meters from earth
+	void SetMoonDistance( double value )
 	{
-		m_dMetersToMoon = value;
+		m_dMoonDistance = value;
 	}
-	// distance to moon in meters
-	__declspec( property( get = GetMetersToMoon, put = SetMetersToMoon ) )
-		double MetersToMoon;
+	// distance to moon in meters from earth
+	__declspec( property( get = GetMoonDistance, put = SetMoonDistance ) )
+		double MoonDistance;
+
+	// radius of lunar orbit around the earth on the screen
+	double GetMoonInches()
+	{
+		return m_dMoonInches;
+	}
+	// radius of lunar orbit around the earth on the screen
+	void SetMoonInches( double value )
+	{
+		m_dMoonInches = value;
+	}
+	// radius of lunar orbit around the earth on the screen
+	__declspec( property( get = GetMoonInches, put = SetMoonInches ) )
+		double MoonInches;
+
+	// lunar distance scale meters to inches on screen
+	double GetMoonScaling()
+	{
+		const double dMoonDistance = MoonDistance;
+		const double dMoonInches = MoonInches;
+		const double value = dMoonDistance / dMoonInches;
+		MoonScaling = value;
+		return value;
+	}
+	// lunar distance scale meters to inches on screen
+	void SetMoonScaling( double value )
+	{
+		m_dMoonScaling = value;
+	}
+	// lunar distance scale meters to inches on screen
+	__declspec( property( get = GetMoonScaling, put = SetMoonScaling ) )
+		double MoonScaling;
+
+	// given a distance in meters, return the number of inches on the screen
+	double GetMoonScreenInches( double meters )
+	{
+		const double scale = MoonScaling;
+		const double value = meters / scale;
+		return value;
+	}
+	// given a distance in meters, return the number of inches on the screen
+	__declspec( property( get = GetMoonScreenInches ) )
+		double MoonScreenInches[];
 
 	// mass of the earth in kilograms
 	double GetMassOfTheEarth()
@@ -198,7 +244,7 @@ public:
 	__declspec( property( get = GetLunarPeriod ) )
 		double LunarPeriod;
 
-	// acceleration of gravity on the moon
+	// acceleration of gravity on the moon in meters per second squared
 	double GetAccelerationOfGravity()
 	{
 		// g = G*M/R^2
@@ -206,41 +252,51 @@ public:
 		// G is the gravitational constant (6.657 x 10^-11 Nm2kg-2)
 		// M is the mass of the earth in kg
 		// R is radius (distance to the moon) in meters
+
+		// universal gravitational constant
 		const double dG = 6.657e-11;
 		const double dM = MassOfTheEarth;
-		const double dR = MetersToMoon;
+		const double dR = MoonDistance;
+
+		// distance to the moon squared
 		const double dR2 = dR * dR;
+
+		// solve Newton's equation (g = G*M/R^2)
 		m_dAccelerationOfGravity = dG * dM / dR2;
+
 		return m_dAccelerationOfGravity;
 	}
 	// acceleration of gravity on the moon
 	__declspec( property( get = GetAccelerationOfGravity ) )
 		double AccelerationOfGravity;
 
-	// distance scale meters to inches on screen
-	double GetDistanceScale()
+	// X gravity in meters per second squared
+	double GetGravityX()
 	{
-		return m_dDistanceScale;
+		return m_dGravityX;
 	}
-	// distance scale meters to inches on screen
-	void SetDistanceScale( double value )
+	// X gravity in meters per second
+	void SetGravityX( double value )
 	{
-		m_dDistanceScale = value;
+		m_dGravityX = value;
 	}
-	// distance scale meters to inches on screen
-	__declspec( property( get = GetDistanceScale, put = SetDistanceScale ) )
-		double DistanceScale;
+	// X gravity in meters per second
+	__declspec( property( get = GetGravityX, put = SetGravityX ) )
+		double GravityX;
 
-	// given a distance in meters, return the number of inches on the screen
-	double GetScreenInches( double meters )
+	// Y gravity in meters per second
+	double GetGravityY()
 	{
-		const double scale = DistanceScale;
-		const double value = meters / scale;
-		return value;
+		return m_dGravityY;
 	}
-	// given a distance in meters, return the number of inches on the screen
-	__declspec( property( get = GetScreenInches ) )
-		double ScreenInches[];
+	// Y gravity in meters per second
+	void SetGravityY( double value )
+	{
+		m_dGravityY = value;
+	}
+	// Y gravity in meters per second
+	__declspec( property( get = GetGravityY, put = SetGravityY ) )
+		double GravityY;
 
 	// X coordinate of the moon in meters
 	double GetMoonX()

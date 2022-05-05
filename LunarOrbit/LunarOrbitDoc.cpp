@@ -23,19 +23,28 @@ END_MESSAGE_MAP()
 CLunarOrbitDoc::CLunarOrbitDoc()
 {
 	AngleInDegrees = -90;
+
 	Velocity = -1022; // meters per second
 	VelocityX = 0; // meters per second
 	VelocityY = -1022; // meters per second
-	MetersToMoon = 382500000; // meters
-	DistanceScale = 100000000;
-	MoonX = MetersToMoon;
+
+	MoonDistance = 382500000; // radius of lunar orbit
+	MoonInches = 4.0; // radius of the lunar orbit on screen
+	MoonX = MoonDistance;
 	MoonY = 0;
 	StartX = MoonX;
 	StartY = 0;
+
+	MassOfTheEarth = 5.983e24; // kg
+
+	// acceleration of gravity on the moon from the earth
+	const double dA = AccelerationOfGravity;
+	GravityX = dA; // meters per second squared
+	GravityY = 0; // meters per second squared
+
 	SampleTime = 1; // seconds
 	const double dSamplesPerDay = SamplesPerDay;
 	RunningTime = 0; // seconds
-	MassOfTheEarth = 5.983e24; // kg
 	const double dLunarPeriod = LunarPeriod;
 }
 
