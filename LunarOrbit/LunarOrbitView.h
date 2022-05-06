@@ -249,7 +249,6 @@ public:
 		// triangle 
 		const double dVelocity = Velocity;
 
-
 		// we are interested in the vector adjacent to the
 		// angle which requires the cosine of the angle
 		const double dCosine = cos( dRadians );
