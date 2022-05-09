@@ -341,6 +341,7 @@ void CLunarOrbitView::BuildFont
 	int nTextHeight, // text height in pixels
 	bool bVertical, // vertical orientation
 	CFont& font, // generated font
+	double dAngle /*= 0*/, // angle in degrees
 	BYTE nCharSet/* = ANSI_CHARSET*/, // current character set
 	bool bFlipX/* = false*/, // flip horizontally
 	bool bFlipY/* = false*/, // flip vertically
@@ -351,7 +352,8 @@ void CLunarOrbitView::BuildFont
 	LOGFONT lf;
 	// Populate logical font with defaults
 	::GetObject( GetStockObject( SYSTEM_FONT ), sizeof( LOGFONT ), &lf );
-	int nAngle = bVertical ? nUp * 900 : 0;
+	int nAngle = int( dAngle * nUp * 10 );
+	nAngle += bVertical ? nUp * 900 : 0;
 
 	// rotate 180 degrees (happens when printing up-side-down)
 	if ( bFlipX && bFlipY )
@@ -519,54 +521,54 @@ void CLunarOrbitView::RenderText( CDC * pDC )
 	
 	csMassOfEarth.Format
 	(
-		_T( "Mass of the earth in kilograms: %g" ), 
+		_T( "Mass of the earth in kg: %g" ), 
 		pDoc->MassOfTheEarth
 	);
 	csGravity.Format
 	(
-		_T( "Gravity in meters per second squared: %g" ), 
+		_T( "Gravity in m/s²: %0.4e" ), 
 		pDoc->AccelerationOfGravity
 	);
 	csGravityX.Format
 	(
-		_T( "X-gravity in meters per second squared: %g" ),
+		_T( "X-gravity in m/s²: %0.4e" ),
 		pDoc->GravityX
 	);
 	csGravityY.Format
 	(
-		_T( "Y-gravity in meters per second squared: %g" ),
+		_T( "Y-gravity in m/s²: %0.4e" ),
 		pDoc->GravityY
 	);
 	csVelocity.Format
 	(
-		_T( "Initial velocity in meters per second: %0.0f" ), Velocity
+		_T( "Initial velocity in m/s: %0.0f" ), Velocity
 	);
 	csVelocityX.Format
 	(
-		_T( "X-velocity in meters per second: %0.0f" ),
+		_T( "X-velocity in m/s: %0.0f" ),
 		HorizontalVelocity
 	);
 	csVelocityY.Format
 	(
-		_T( "Y-velocity in meters per second: %0.0f" ),
+		_T( "Y-velocity in m/s: %0.0f" ),
 		VerticalVelocity
 	);
 	csDistance.Format
 	(
-		_T( "Distance to moon in meters: %0.0f" ), MoonDistance
+		_T( "Distance to moon in m: %0.0f" ), MoonDistance
 	);
 	csMoonX.Format
 	(
-		_T( "X Distance to moon in meters: %0.0f" ), pDoc->MoonX
+		_T( "X Distance to moon in m: %0.0f" ), pDoc->MoonX
 	);
 	csMoonY.Format
 	(
-		_T( "Y Distance to moon in meters: %0.0f" ), pDoc->MoonY
+		_T( "Y Distance to moon in m: %0.0f" ), pDoc->MoonY
 	);
-	csAngle.Format( _T( "Angle in degrees: %0.02f" ), AngleInDegrees );
+	csAngle.Format( _T( "Angle in degA: %0.02f" ), AngleInDegrees );
 	csSample.Format
 	(
-		_T( "Time between samples in seconds: %0.0f" ), SampleTime
+		_T( "Time between samples in s: %0.0f" ), SampleTime
 	);
 	csSamplesPerDay.Format
 	(
@@ -577,7 +579,7 @@ void CLunarOrbitView::RenderText( CDC * pDC )
 	// to display the running time in days
 	csRunningTime.Format
 	(
-		_T( "Running time in days: %0.01f" ), pDoc->RunningTime / 86400
+		_T( "Running time in days: %0.2f" ), pDoc->RunningTime / 86400
 	);
 
 	// prepare the device context
@@ -813,7 +815,35 @@ void CLunarOrbitView::RenderMoon( CDC * pDC )
 	// draw the moon as an ellipse that fits into the rectangle
 	pDC->Ellipse( &rectMoon );
 
+	CPoint ptMoon = MoonCenterRelativeToEarth;
+	CString csCoor;
+	csCoor.Format( _T( "%d,%d" ), ptMoon.x, ptMoon.y );
+	CPoint ptCenter = MoonCenter;
+
+	// 0.18 inch size
+	const int nTextHeight = InchesToLogical( 0.18 );
+
+	// create a font for text output
+	CFont font;
+	BuildFont
+	(
+		_T( "Arial" ), false, false, nTextHeight, false, font
+	);
+
+	// red color
+	const COLORREF rgbRed = RGB( 255, 0, 0 );
+
+	const COLORREF rgbOld = pDC->SetTextColor( rgbRed );
+	const int nBM = pDC->SetBkMode( OPAQUE );
+	const int nTA = pDC->SetTextAlign( DT_TOP | DT_LEFT );
+	CFont* pOldFont = pDC->SelectObject( &font );
+
+	pDC->TextOut( rectMoon.right, ptCenter.y, csCoor );
+
 	// restore the device context
+	pDC->SelectObject( pOldFont );
+	pDC->SetTextColor( rgbOld );
+	pDC->SetBkMode( nBM );
 	pDC->SelectObject( pPenOld );
 	pDC->SelectObject( pBrOld );
 
@@ -867,6 +897,9 @@ void CLunarOrbitView::RenderEarth( CDC * pDC )
 // horizontal vector represented by the sides of the right triangle
 void CLunarOrbitView::RenderTriangle( CDC* pDC )
 {
+	// pointer to the document information
+	CLunarOrbitDoc* pDoc = Document;
+
 	// 2 hundredths of an inch
 	const int nRedWidth = InchesToLogical( 0.02 );
 
@@ -887,6 +920,9 @@ void CLunarOrbitView::RenderTriangle( CDC* pDC )
 	// center point of the moon
 	CPoint ptMoon = MoonCenter;
 
+	// angle 
+	const double dAngle = TextAngleInDegrees;
+
 	// draw the hypotenuse of the right triangle (radius of orbit)
 	pDC->MoveTo( ptMoon );
 	pDC->LineTo( ptEarth );
@@ -899,6 +935,66 @@ void CLunarOrbitView::RenderTriangle( CDC* pDC )
 
 	// restore the device context
 	pDC->SelectObject( pPenOld );
+
+	// 0.18 inch size
+	const int nTextHeight = InchesToLogical( 0.18 );
+
+	const COLORREF rgbOld = pDC->SetTextColor( rgbRed );
+	const int nTA = pDC->SetTextAlign( TA_CENTER | TA_BOTTOM );
+	const int nBM = pDC->SetBkMode( OPAQUE );
+	
+	// create a font for text output
+	CString csGravity, csGravityX, csGravityY;
+	CFont fontG, fontX, fontY;
+	BuildFont
+	(
+		_T( "Arial" ), false, false, nTextHeight, false, fontG, dAngle
+	);
+	csGravity.Format
+	(
+		_T( "Ag: %0.4e" ), pDoc->AccelerationOfGravity
+	);
+	BuildFont
+	(
+		_T( "Arial" ), false, false, nTextHeight, false, fontX
+	);
+	csGravityX.Format
+	(
+		_T( "Ax: %0.4e" ), pDoc->GravityX
+	);
+	BuildFont
+	(
+		_T( "Arial" ), false, false, nTextHeight, true, fontY
+	);
+	csGravityY.Format
+	(
+		_T( "Ay: %0.4e" ), pDoc->GravityY
+	);
+
+	// acceleration of gravity
+	CFont* pOldFont = pDC->SelectObject( &fontG );
+	const int Xg = ptEarth.x + ( ptMoon.x - ptEarth.x ) / 2;
+	const int Yg = ptEarth.y + ( ptMoon.y - ptEarth.y ) / 2;
+	pDC->TextOut( Xg, Yg, csGravity );
+
+	// x vector acceleration of gravity
+	pDC->SelectObject( &fontX );
+	const int Xx = ptEarth.x + ( ptMoon.x - ptEarth.x ) / 2;
+	const int Yx = ptEarth.y;
+	pDC->TextOut( Xx, Yx, csGravityX );
+
+	// y vector acceleration of gravity
+	pDC->SelectObject( &fontY );
+	const int Xy = ptMoon.x;
+	const int Yy = ptMoon.y + ( ptEarth.y - ptMoon.y ) / 2;
+	pDC->SetTextAlign( TA_CENTER | TA_BOTTOM );
+	pDC->TextOut( Xy, Yy, csGravityY );
+
+	// restore the device context
+	pDC->SelectObject( pOldFont );
+	pDC->SetBkMode( nBM );
+	pDC->SetTextAlign( nTA );
+	pDC->SetTextColor( rgbOld );
 
 } // RenderTriangle
 
@@ -1036,11 +1132,11 @@ void CLunarOrbitView::UpdateMoonPosition()
 
 		// the new X position is the original X position plus the X velocity
 		// multiplied by the time increment
-		const double dNewX = dX + dVx * dSt;
+		const double dNewX = dX + dNewVx * dSt;
 
 		// the new Y position is the original Y position plus the Y velocity
 		// multiplied by the time increment
-		const double dNewY = dY + dVy * dSt;
+		const double dNewY = dY + dNewVy * dSt;
 
 		// are we doing a single orbit?
 		const bool bSingleOrbit = SingleOrbit;

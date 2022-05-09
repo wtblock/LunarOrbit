@@ -249,14 +249,16 @@ public:
 		// triangle 
 		const double dVelocity = Velocity;
 
-		// we are interested in the vector adjacent to the
-		// angle which requires the cosine of the angle
-		const double dCosine = cos( dRadians );
+		// the sine of the angle is used for the vector
+		// opposite of the angle and since the velocity
+		// is actually perpendicular to the hypotenuse
+		// it is appropriate here to calculate the 
+		// horizontal velocity 
+		const double dSine = sin( dRadians );
 
-		// the cosine of the angle multiplied by the velocity (hypotenuse 
-		// of the triangle) yields the horizontal velocity (side adjacent
-		// to the angle)
-		const double value = dVelocity * dCosine;
+		// the sine of the angle multiplied by the velocity (hypotenuse 
+		// of the triangle) yields the horizontal velocity
+		const double value = dVelocity * dSine;
 		return value;
 	}
 	// horizontal velocity in meters per second
@@ -274,14 +276,16 @@ public:
 		// triangle 
 		const double dVelocity = Velocity;
 
-		// we are interested in the vector opposite of the
-		// angle which requires the sine of the angle
-		const double dSine = sin( dRadians );
+		// the cosine of the angle is used for the vector
+		// adjacent to the angle and since the velocity
+		// is actually perpendicular to the hypotenuse
+		// it is appropriate here to calculate the 
+		// vertical velocity 
+		const double dCosine = cos( dRadians );
 
-		// the sine of the angle multiplied by the velocity (hypotenuse 
-		// of the triangle) yields the vertical velocity (side opposite
-		// of the angle)
-		const double value = dVelocity * dSine;
+		// the cosine of the angle multiplied by the velocity (hypotenuse 
+		// of the triangle) yields the vertical velocity
+		const double value = dVelocity * dCosine;
 		return value;
 	}
 	// vertical velocity in meters per second
@@ -292,24 +296,10 @@ public:
 	double GetAngleInRadians()
 	{
 		// center of the moon on the screen
-		CPoint ptMoon = MoonCenter;
+		CPoint ptMoon = MoonCenterRelativeToEarth;
 
-		// triangle where the hypotenuse is the vector from the 
-		// earth to the moon
-		CPoint ptEarth = EarthCenter;
-
-		// difference between the moon's center X and the earth's center X
-		const int nX = ptMoon.x - ptEarth.x;
-
-		// same for Y except NOTE the reverse order. This is due to 
-		// our inverted coordinate system from standard Cartesian
-		// coordinates (our Y gets larger as you go down instead of
-		// getting larger when you go up) which has to be accounted
-		// for when doing trigonometry. Our logical coordinate system
-		// is setup by the SetDrawDC and SetPrintDC in order to make
-		// all drawing device independent where DC stands for device
-		// context.
-		const int nY = ptEarth.y - ptMoon.y;
+		const int nX = ptMoon.x;
+		const int nY = ptMoon.y;
 
 		// length of the hypotenuse using the Pythagorean theorem
 		// i.e. square root of the sum of the squares of the sides
@@ -350,6 +340,31 @@ public:
 	// angle in degrees of the moon
 	__declspec( property( get = GetAngleInDegrees, put = SetAngleInDegrees ) )
 		double AngleInDegrees;
+
+	// text angle in degrees of the moon
+	double GetTextAngleInDegrees()
+	{
+		// angle in radians
+		const double dRadians = AngleInRadians;
+
+		// angle in degrees 
+		double value = Degrees( dRadians );
+
+		CPoint ptMoon = MoonCenterRelativeToEarth;
+
+		// if the moon is to the left of the earth,
+		// convert the angle to one less than -90
+		// degrees
+		if ( ptMoon.x < 0 )
+		{
+			value = -90 - ( 90 + value );
+		}
+
+		return value;
+	}
+	// text angle in degrees of the moon
+	__declspec( property( get = GetTextAngleInDegrees ) )
+		double TextAngleInDegrees;
 
 	// distance to moon in meters from earth
 	double GetMoonDistance()
@@ -436,13 +451,10 @@ public:
 	__declspec( property( get = GetEarthRectangle ) )
 		CRect EarthRectangle;
 
-	// point defining the moon's center
-	CPoint GetMoonCenter()
+	// center of the moon relative to the earth
+	CPoint GetMoonCenterRelativeToEarth()
 	{
 		CLunarOrbitDoc* pDoc = Document;
-
-		// build the point starting with the earth's center
-		CPoint value = EarthCenter;
 
 		// x and y coordinates of the moon relative to the earth
 		// in meters
@@ -459,8 +471,27 @@ public:
 		const int nX = InchesToLogical( dInchesX );
 		const int nY = InchesToLogical( dInchesY );
 
+		// the moon's relative coordinates
+		CPoint value( nX, nY );
+
+		return value;
+	}
+	// center of the moon relative to the earth
+	__declspec( property( get = GetMoonCenterRelativeToEarth ) )
+		CPoint MoonCenterRelativeToEarth;
+
+	// point defining the moon's center
+	CPoint GetMoonCenter()
+	{
+		CLunarOrbitDoc* pDoc = Document;
+
+		// build the point starting with the earth's center
+		CPoint value = EarthCenter;
+
+		CPoint moon = MoonCenterRelativeToEarth;
+
 		// offset the earth center by the moon's relative coordinates
-		value.Offset( nX, nY );
+		value.Offset( moon );
 
 		return value;
 	}
@@ -655,6 +686,7 @@ protected:
 		int nTextHeight, // text height in pixels
 		bool bVertical, // vertical orientation
 		CFont& font, // generated font
+		double dAngle = 0, // angle in degrees
 		BYTE nCharSet = ANSI_CHARSET, // current character set
 		bool bFlipX = false, // flip horizontally
 		bool bFlipY = false, // flip vertically

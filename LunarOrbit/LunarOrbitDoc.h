@@ -247,7 +247,7 @@ public:
 	// acceleration of gravity on the moon in meters per second squared
 	double GetAccelerationOfGravity()
 	{
-		// g = G*M/R^2
+		// g = M/R²
 		// g is the acceleration of gravity being calculated
 		// G is the gravitational constant (6.657 x 10^-11 Nm2kg-2)
 		// M is the mass of the earth in kg
@@ -261,7 +261,7 @@ public:
 		// distance to the moon squared
 		const double dR2 = dR * dR;
 
-		// solve Newton's equation (g = G*M/R^2)
+		// solve Newton's equation (g = GM/R²)
 		m_dAccelerationOfGravity = dG * dM / dR2;
 
 		return m_dAccelerationOfGravity;
