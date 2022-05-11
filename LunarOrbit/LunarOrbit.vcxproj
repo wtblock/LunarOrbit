@@ -182,9 +182,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ChildFrm.h" />
+    <ClInclude Include="Linear.h" />
     <ClInclude Include="LunarOrbit.h" />
     <ClInclude Include="LunarOrbitDoc.h" />
     <ClInclude Include="LunarOrbitView.h" />
+    <ClInclude Include="MagnitudeVector.h" />
     <ClInclude Include="MainFrm.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
@@ -192,9 +194,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ChildFrm.cpp" />
+    <ClCompile Include="Linear.cpp" />
     <ClCompile Include="LunarOrbit.cpp" />
     <ClCompile Include="LunarOrbitDoc.cpp" />
     <ClCompile Include="LunarOrbitView.cpp" />
+    <ClCompile Include="MagnitudeVector.cpp" />
     <ClCompile Include="MainFrm.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

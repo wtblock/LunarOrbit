@@ -42,6 +42,12 @@
     <ClInclude Include="Resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Linear.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MagnitudeVector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LunarOrbit.cpp">
@@ -60,6 +66,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="LunarOrbitView.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Linear.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MagnitudeVector.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

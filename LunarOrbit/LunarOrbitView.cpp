@@ -332,61 +332,6 @@ void CLunarOrbitView::OnSize( UINT nType, int cx, int cy )
 } // OnSize
 
 /////////////////////////////////////////////////////////////////////////////
-// generate font characteristics from given properties
-void CLunarOrbitView::BuildFont
-(
-	CString csFace, // name of the font face
-	bool bBold, // bold font if true
-	bool bItalic, // italic font if true
-	int nTextHeight, // text height in pixels
-	bool bVertical, // vertical orientation
-	CFont& font, // generated font
-	double dAngle /*= 0*/, // angle in degrees
-	BYTE nCharSet/* = ANSI_CHARSET*/, // current character set
-	bool bFlipX/* = false*/, // flip horizontally
-	bool bFlipY/* = false*/, // flip vertically
-	short nUp/* = -1*/, // moving up is a negative value
-	int nTextWidth/* = 0*/ // default width
-)
-{
-	LOGFONT lf;
-	// Populate logical font with defaults
-	::GetObject( GetStockObject( SYSTEM_FONT ), sizeof( LOGFONT ), &lf );
-	int nAngle = int( dAngle * nUp * 10 );
-	nAngle += bVertical ? nUp * 900 : 0;
-
-	// rotate 180 degrees (happens when printing up-side-down)
-	if ( bFlipX && bFlipY )
-	{
-		nAngle += ( nUp * 1800 );
-		nAngle = nAngle % 3600;
-	}
-
-	// customize our font
-	if ( nTextHeight != 0 )
-	{
-		lf.lfHeight = nTextHeight;
-		if ( nTextWidth != 0 )
-		{
-			lf.lfWidth = nTextWidth;
-		}
-		else
-		{
-			lf.lfWidth = lf.lfHeight * 2 / 5;
-		}
-	}
-
-	lf.lfEscapement = nAngle;
-	lf.lfOrientation = nAngle;
-
-	lf.lfWeight = bBold ? FW_BOLD : FW_NORMAL;
-	lf.lfItalic = bItalic == true;
-	lf.lfCharSet = nCharSet;
-	_tcscpy( lf.lfFaceName, csFace );
-	font.CreateFontIndirect( &lf );
-} // BuildFont
-
-/////////////////////////////////////////////////////////////////////////////
 // render the lunar orbit 
 void CLunarOrbitView::RenderLunarOrbit( CDC * pDC )
 {
@@ -439,12 +384,21 @@ void CLunarOrbitView::RenderEquations( CDC * pDC )
 	// labels for information to be displayed on the output device
 	CString csText
 	(
+		_T( "Newton's Second Law of Universal Gravitation:\n \n" )
+		_T( "    a = GM/r²\n \n" )
 		_T( "Newton's first equation of motion:\n \n" )
 		_T( "    v = u + at\n \n" )
 		_T( "Newton's second equation of motion:\n \n" )
 		_T( "    s = ut + ½at²\n \n")
-		_T( "where v is final velocity, u is initial velocity,\n" )
-		_T( "    s is final position, a is acceleration, and t is time.")
+		_T( "where:\n \n" ) 
+		_T( "    a is acceleration,\n")
+		_T( "    G is the universal gravitational constant,\n")
+		_T( "    M is mass,\n")
+		_T( "    r is distance,\n" )
+		_T( "    v is final velocity,\n" )
+		_T( "    u is initial velocity,\n" )
+		_T( "    s is final position, and\n")
+		_T( "    t is time." )
 	);
 	
 	// prepare the device context
@@ -514,72 +468,41 @@ void CLunarOrbitView::RenderText( CDC * pDC )
 	// labels for information to be displayed on the output device
 	CString 
 		csMassOfEarth,
-		csGravity, csGravityX, csGravityY,
-		csVelocity, csVelocityX, csVelocityY,
-		csDistance, csMoonX, csMoonY,
-		csSample, csSamplesPerDay, csRunningTime, csAngle;
+		csSample, csSamplesPerDay, csRunningTime, 
+		csAngleG, csAngleV;
 	
 	csMassOfEarth.Format
 	(
-		_T( "Mass of the earth in kg: %g" ), 
-		pDoc->MassOfTheEarth
+		_T( "Me=%g kg" ), pDoc->MassOfTheEarth
 	);
-	csGravity.Format
-	(
-		_T( "Gravity in m/s²: %0.4e" ), 
-		pDoc->AccelerationOfGravity
-	);
-	csGravityX.Format
-	(
-		_T( "X-gravity in m/s²: %0.4e" ),
-		pDoc->GravityX
-	);
-	csGravityY.Format
-	(
-		_T( "Y-gravity in m/s²: %0.4e" ),
-		pDoc->GravityY
-	);
-	csVelocity.Format
-	(
-		_T( "Initial velocity in m/s: %0.0f" ), Velocity
-	);
-	csVelocityX.Format
-	(
-		_T( "X-velocity in m/s: %0.0f" ),
-		HorizontalVelocity
-	);
-	csVelocityY.Format
-	(
-		_T( "Y-velocity in m/s: %0.0f" ),
-		VerticalVelocity
-	);
-	csDistance.Format
-	(
-		_T( "Distance to moon in m: %0.0f" ), MoonDistance
-	);
-	csMoonX.Format
-	(
-		_T( "X Distance to moon in m: %0.0f" ), pDoc->MoonX
-	);
-	csMoonY.Format
-	(
-		_T( "Y Distance to moon in m: %0.0f" ), pDoc->MoonY
-	);
-	csAngle.Format( _T( "Angle in degA: %0.02f" ), AngleInDegrees );
+	const CString csGravity = GravityVector.Label;
+	const CString csGravityX = GravityX.Label;
+	const CString csGravityY = GravityY.Label;
+	csAngleG.Format( _T( "Ag angle=%0.02f º" ), GravityVector.Degrees );
+
+	const CString csDistance = DistanceVector.Label;
+	const CString csDistanceX = DistanceX.Label;
+	const CString csDistanceY = DistanceY.Label;
+
+	const CString csVelocity = VelocityVector.Label;
+	const CString csVelocityX = VelocityX.Label;
+	const CString csVelocityY = VelocityY.Label;
+	csAngleV.Format( _T( "Vg angle=%0.02f º" ), VelocityVector.Degrees );
+
 	csSample.Format
 	(
-		_T( "Time between samples in s: %0.0f" ), SampleTime
+		_T( "Time slice=%0.0f s" ), SampleTime
 	);
 	csSamplesPerDay.Format
 	(
-		_T( "Samples per day: %0.0f" ), pDoc->SamplesPerDay
+		_T( "%0.0f samples/day" ), pDoc->SamplesPerDay
 	);
 
 	// running time is in seconds, so divide by the number of seconds in a day
 	// to display the running time in days
 	csRunningTime.Format
 	(
-		_T( "Running time in days: %0.2f" ), pDoc->RunningTime / 86400
+		_T( "Period=%0.2f days" ), pDoc->RunningTime / 86400
 	);
 
 	// prepare the device context
@@ -601,31 +524,42 @@ void CLunarOrbitView::RenderText( CDC * pDC )
 	// draw the textual information one line at a time
 	pDC->TextOut( nX, nY, csMassOfEarth );
 	nY += nTextHeight;
-	pDC->TextOut( nX, nY, csDistance );
+	pDC->TextOut( nX, nY, csSample );
 	nY += nTextHeight;
-	pDC->TextOut( nX, nY, csMoonX );
+	pDC->TextOut( nX, nY, csSamplesPerDay );
 	nY += nTextHeight;
-	pDC->TextOut( nX, nY, csMoonY );
+	pDC->TextOut( nX, nY, csRunningTime );
 	nY += nTextHeight;
-	pDC->TextOut( nX, nY, csVelocity );
 	nY += nTextHeight;
-	pDC->TextOut( nX, nY, csVelocityX );
-	nY += nTextHeight;
-	pDC->TextOut( nX, nY, csVelocityY );
-	nY += nTextHeight;
+
+	pDC->SetTextColor( GravityVector.Color );
 	pDC->TextOut( nX, nY, csGravity );
 	nY += nTextHeight;
 	pDC->TextOut( nX, nY, csGravityX );
 	nY += nTextHeight;
 	pDC->TextOut( nX, nY, csGravityY );
 	nY += nTextHeight;
-	pDC->TextOut( nX, nY, csAngle );
+	pDC->TextOut( nX, nY, csAngleG );
+
+	nY = InchesToLogical( 6.0 );
+	pDC->SetTextColor( VelocityVector.Color );
+	pDC->TextOut( nX, nY, csVelocity );
 	nY += nTextHeight;
-	pDC->TextOut( nX, nY, csSample );
+	pDC->TextOut( nX, nY, csVelocityX );
 	nY += nTextHeight;
-	pDC->TextOut( nX, nY, csSamplesPerDay );
+	pDC->TextOut( nX, nY, csVelocityY );
 	nY += nTextHeight;
-	pDC->TextOut( nX, nY, csRunningTime );
+	pDC->TextOut( nX, nY, csAngleV );
+	nY += nTextHeight;
+	nY += nTextHeight;
+
+	pDC->SetTextColor( DistanceVector.Color );
+	pDC->TextOut( nX, nY, csDistance );
+	nY += nTextHeight;
+	pDC->TextOut( nX, nY, csDistanceX );
+	nY += nTextHeight;
+	pDC->TextOut( nX, nY, csDistanceY );
+	nY += nTextHeight;
 	nY += nTextHeight;
 
 	// labels beside the grid
@@ -830,11 +764,11 @@ void CLunarOrbitView::RenderMoon( CDC * pDC )
 		_T( "Arial" ), false, false, nTextHeight, false, font
 	);
 
-	// red color
-	const COLORREF rgbRed = RGB( 255, 0, 0 );
+	// cyan color
+	const COLORREF rgbCyan = RGB( 0, 255, 255 );
 
-	const COLORREF rgbOld = pDC->SetTextColor( rgbRed );
-	const int nBM = pDC->SetBkMode( OPAQUE );
+	const COLORREF rgbOld = pDC->SetTextColor( rgbCyan );
+	const int nBM = pDC->SetBkMode( TRANSPARENT );
 	const int nTA = pDC->SetTextAlign( DT_TOP | DT_LEFT );
 	CFont* pOldFont = pDC->SelectObject( &font );
 
@@ -890,113 +824,26 @@ void CLunarOrbitView::RenderEarth( CDC * pDC )
 } // RenderEarth
 
 /////////////////////////////////////////////////////////////////////////////
-// render the earth / moon triangle - the earth's acceleration is 
-// applied toward's the earth along the triangle's hypotenuse, but
-// in order to calculate velocity and position of the moon that 
-// gravitational attraction needs to be broken into a vertical and
-// horizontal vector represented by the sides of the right triangle
-void CLunarOrbitView::RenderTriangle( CDC* pDC )
+// draw the acceleration vector centered on the moon
+void CLunarOrbitView::RenderAcceleration( CDC * pDC )
 {
-	// pointer to the document information
-	CLunarOrbitDoc* pDoc = Document;
+	// draw all three vectors
+	GravityVector.Draw( pDC );
+	GravityX.Draw( pDC );
+	GravityY.Draw( pDC );
 
-	// 2 hundredths of an inch
-	const int nRedWidth = InchesToLogical( 0.02 );
+} // RenderAcceleration
 
-	// red color
-	const COLORREF rgbRed = RGB( 255, 0, 0 );
+/////////////////////////////////////////////////////////////////////////////
+// render velocity vector
+void CLunarOrbitView::RenderVelocity( CDC * pDC )
+{
+	// draw all three vectors
+	VelocityVector.Draw( pDC );
+	VelocityX.Draw( pDC );
+	VelocityY.Draw( pDC );
 
-	// create a pen to draw with
-	CPen penRed;
-
-	// create a solid red pen 0.02 inches wide
-	penRed.CreatePen( PS_SOLID, nRedWidth, rgbRed );
-
-	CPen* pPenOld = pDC->SelectObject( &penRed );
-
-	// draw hypotenuse of triangle
-	CPoint ptEarth = EarthCenter;
-
-	// center point of the moon
-	CPoint ptMoon = MoonCenter;
-
-	// angle 
-	const double dAngle = TextAngleInDegrees;
-
-	// draw the hypotenuse of the right triangle (radius of orbit)
-	pDC->MoveTo( ptMoon );
-	pDC->LineTo( ptEarth );
-
-	// draw the X vector
-	pDC->LineTo( ptMoon.x, ptEarth.y );
-
-	// draw the Y vector
-	pDC->LineTo( ptMoon );
-
-	// restore the device context
-	pDC->SelectObject( pPenOld );
-
-	// 0.18 inch size
-	const int nTextHeight = InchesToLogical( 0.18 );
-
-	const COLORREF rgbOld = pDC->SetTextColor( rgbRed );
-	const int nTA = pDC->SetTextAlign( TA_CENTER | TA_BOTTOM );
-	const int nBM = pDC->SetBkMode( OPAQUE );
-	
-	// create a font for text output
-	CString csGravity, csGravityX, csGravityY;
-	CFont fontG, fontX, fontY;
-	BuildFont
-	(
-		_T( "Arial" ), false, false, nTextHeight, false, fontG, dAngle
-	);
-	csGravity.Format
-	(
-		_T( "Ag: %0.4e" ), pDoc->AccelerationOfGravity
-	);
-	BuildFont
-	(
-		_T( "Arial" ), false, false, nTextHeight, false, fontX
-	);
-	csGravityX.Format
-	(
-		_T( "Ax: %0.4e" ), pDoc->GravityX
-	);
-	BuildFont
-	(
-		_T( "Arial" ), false, false, nTextHeight, true, fontY
-	);
-	csGravityY.Format
-	(
-		_T( "Ay: %0.4e" ), pDoc->GravityY
-	);
-
-	// acceleration of gravity
-	CFont* pOldFont = pDC->SelectObject( &fontG );
-	const int Xg = ptEarth.x + ( ptMoon.x - ptEarth.x ) / 2;
-	const int Yg = ptEarth.y + ( ptMoon.y - ptEarth.y ) / 2;
-	pDC->TextOut( Xg, Yg, csGravity );
-
-	// x vector acceleration of gravity
-	pDC->SelectObject( &fontX );
-	const int Xx = ptEarth.x + ( ptMoon.x - ptEarth.x ) / 2;
-	const int Yx = ptEarth.y;
-	pDC->TextOut( Xx, Yx, csGravityX );
-
-	// y vector acceleration of gravity
-	pDC->SelectObject( &fontY );
-	const int Xy = ptMoon.x;
-	const int Yy = ptMoon.y + ( ptEarth.y - ptMoon.y ) / 2;
-	pDC->SetTextAlign( TA_CENTER | TA_BOTTOM );
-	pDC->TextOut( Xy, Yy, csGravityY );
-
-	// restore the device context
-	pDC->SelectObject( pOldFont );
-	pDC->SetBkMode( nBM );
-	pDC->SetTextAlign( nTA );
-	pDC->SetTextColor( rgbOld );
-
-} // RenderTriangle
+} // RenderVelocity
 
 /////////////////////////////////////////////////////////////////////////////
 // render the page or view
@@ -1044,8 +891,11 @@ void CLunarOrbitView::render
 	// draw the earth's shape
 	RenderEarth( pDC );
 
-	// draw the earth moon triangle 
-	RenderTriangle( pDC );
+	// render the acceleration vector
+	RenderAcceleration( pDC );
+
+	// render the velocity vector
+	RenderVelocity( pDC );
 
 } // render
 
@@ -1055,11 +905,21 @@ void CLunarOrbitView::AddOrbitalPoint()
 {
 	CLunarOrbitDoc* pDoc = Document;
 
-	CRect rectMoon = MoonRectangle;
+	// number of points in the current orbit
+	const int nPoints = (int)m_OrbitPoints.size();
 
-	CPoint pt = rectMoon.CenterPoint();
+	// number of hours in the known lunar period is the number of seconds
+	// divided by the number of seconds in an hour
+	const int nHours = int( pDoc->LunarPeriod / 3600 );
 
-	m_OrbitPoints.push_back( pt );
+	// since we are adding one point per hour, we can stop after one orbit's
+	// worth of hours
+	if ( nPoints < nHours )
+	{
+		CPoint pt = MoonCenter;
+
+		m_OrbitPoints.push_back( pt );
+	}
 
 } // AddOrbitalPoint
 
@@ -1078,16 +938,16 @@ void CLunarOrbitView::UpdateMoonPosition()
 	double dY = pDoc->MoonY;
 
 	// starting velocity
-	double dVx = pDoc->VelocityX;
-	double dVy = pDoc->VelocityY;
+	double dVx = pDoc->LunarVelocityX;
+	double dVy = pDoc->LunarVelocityY;
 
 	// acceleration of earth's gravity on the moon is
 	// calculated using Newton's equation
 	const double dA = pDoc->AccelerationOfGravity;
 
 	// starting acceleration of gravity
-	double dAx = pDoc->GravityX;
-	double dAy = pDoc->GravityY;
+	double dAx = pDoc->LunarGravityX;
+	double dAy = pDoc->LunarGravityY;
 
 	// the time the model has been run in seconds
 	double dTime = pDoc->RunningTime;
@@ -1177,11 +1037,47 @@ void CLunarOrbitView::UpdateMoonPosition()
 	// record the final vector results into the document
 	pDoc->MoonX = dX; // X distance
 	pDoc->MoonY = dY; // Y distance
-	pDoc->VelocityX = dVx; // X velocity
-	pDoc->VelocityY = dVy; // Y velocity
-	pDoc->GravityX = dAx; // X gravity
-	pDoc->GravityY = dAy; // Y gravity
+	pDoc->LunarVelocityX = dVx; // X velocity
+	pDoc->LunarVelocityY = dVy; // Y velocity
+	pDoc->LunarGravityX = dAx; // X gravity
+	pDoc->LunarGravityY = dAy; // Y gravity
 	pDoc->RunningTime = dTime;
+
+	// update the gravity vector with the moon's new position
+	GravityVector.FirstPoint = MoonCenter;
+
+	// X and y components of gravity
+	GravityX = GravityVector.VectorX;
+	GravityX.Description = _T( "Ax" );
+	GravityY = GravityVector.VectorY;
+	GravityY.Description = _T( "Ay" );
+
+	// update the distance vector with the moon's new position
+	DistanceVector.FirstPoint = MoonCenter;
+
+	// X and y components of the moon's distance to the earth
+	DistanceX = DistanceVector.VectorX;
+	DistanceX.Description = _T( "Sx" );
+	DistanceY = DistanceVector.VectorY;
+	DistanceY.Description = _T( "Sy" );
+
+	// copy the velocity vector location from the acceleration vector
+	VelocityVector.FirstPoint = GravityVector.FirstPoint;
+	VelocityVector.SecondPoint = GravityVector.SecondPoint;
+
+	// set the vector's length to one inch while keeping the angle the
+	// same as the acceleration vector
+	const double dLength = InchesToLogical( 1.0 );
+	VelocityVector.Length = dLength;
+
+	// the velocity is 90 degrees out of phase with the acceleration
+	// (rotation around the earth is counter-clockwise when looking down 
+	// toward the north pole of the earth)
+	VelocityVector.RotateAroundFirstPoint( -90 );
+	VelocityX = VelocityVector.VectorX;
+	VelocityX.Description = _T( "Vx" );
+	VelocityY = VelocityVector.VectorY;
+	VelocityY.Description = _T( "Vy" );
 
 	// keep track of orbital points
 	AddOrbitalPoint();

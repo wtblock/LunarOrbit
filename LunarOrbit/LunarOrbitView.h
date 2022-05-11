@@ -5,6 +5,7 @@
 
 #pragma once
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -226,13 +227,13 @@ public:
 	double GetVelocity()
 	{
 		CLunarOrbitDoc* pDoc = Document;
-		const double value = pDoc->Velocity;
+		const double value = pDoc->LunarVelocity;
 		return value;
 	}
 	// velocity in meters per second
 	void SetVelocity( double value )
 	{
-		Document->Velocity = value;
+		Document->LunarVelocity = value;
 	}
 	// velocity in meters per second
 	__declspec( property( get = GetVelocity, put = SetVelocity ) )
@@ -415,14 +416,8 @@ public:
 	// point defining the earth's center
 	CPoint GetEarthCenter()
 	{
-		// get the center of the earth on the document
-		const double dDocumentWidth = DocumentWidth;
-		const double dDocumentHeight = DocumentHeight;
-		const int nX = InchesToLogical( dDocumentWidth / 2 );
-		const int nY = InchesToLogical( dDocumentHeight / 2 );
-
-		// build the point
-		CPoint value( nX, nY );
+		CLunarOrbitDoc* pDoc = Document;
+		CPoint value = pDoc->EarthCenter;
 		return value;
 	}
 	// point defining the earth's center
@@ -432,19 +427,8 @@ public:
 	// rectangle defining the earth
 	CRect GetEarthRectangle()
 	{
-		// get the center of the earth on the document
-		CPoint ptCenter = EarthCenter;
-
-		// rectangle size (width and height) in inches
-		const double dSize = 0.5;
-		const int nSize = InchesToLogical( dSize );
-		CSize size( nSize, nSize );
-
-		// build the rectangle
-		CRect value( ptCenter, size );
-
-		// recenter the rectangle
-		value.OffsetRect( -size.cx / 2, -size.cy / 2 );
+		CLunarOrbitDoc* pDoc = Document;
+		CRect value = pDoc->EarthRectangle;
 		return value;
 	}
 	// rectangle defining the earth
@@ -455,25 +439,7 @@ public:
 	CPoint GetMoonCenterRelativeToEarth()
 	{
 		CLunarOrbitDoc* pDoc = Document;
-
-		// x and y coordinates of the moon relative to the earth
-		// in meters
-		const double dMetersX = pDoc->MoonX;
-		const double dMetersY = pDoc->MoonY;
-
-		// x and y coordinates of the moon relative to the earth
-		// in screen inches
-		const double dInchesX = pDoc->MoonScreenInches[ dMetersX ];
-		const double dInchesY = pDoc->MoonScreenInches[ dMetersY ];
-
-		// x and y coordinates of the moon relative to the earth
-		// in logical pixels
-		const int nX = InchesToLogical( dInchesX );
-		const int nY = InchesToLogical( dInchesY );
-
-		// the moon's relative coordinates
-		CPoint value( nX, nY );
-
+		CPoint value = pDoc->MoonCenterRelativeToEarth;
 		return value;
 	}
 	// center of the moon relative to the earth
@@ -484,15 +450,7 @@ public:
 	CPoint GetMoonCenter()
 	{
 		CLunarOrbitDoc* pDoc = Document;
-
-		// build the point starting with the earth's center
-		CPoint value = EarthCenter;
-
-		CPoint moon = MoonCenterRelativeToEarth;
-
-		// offset the earth center by the moon's relative coordinates
-		value.Offset( moon );
-
+		CPoint value = pDoc->MoonCenter;
 		return value;
 	}
 	// point defining the moon's center
@@ -502,24 +460,134 @@ public:
 	// rectangle defining the moon
 	CRect GetMoonRectangle()
 	{
-		// get the center of the earth on the document
-		CPoint ptCenter = MoonCenter;
-
-		// rectangle size (width and height) in inches
-		const double dSize = 0.25;
-		const int nSize = InchesToLogical( dSize );
-		CSize size( nSize, nSize );
-
-		// build the rectangle
-		CRect value( ptCenter, size );
-
-		// recenter the rectangle
-		value.OffsetRect( -size.cx / 2, -size.cy / 2 );
+		CLunarOrbitDoc* pDoc = Document;
+		CRect value = pDoc->MoonRectangle;
 		return value;
 	}
 	// rectangle defining the moon
 	__declspec( property( get = GetMoonRectangle ) )
 		CRect MoonRectangle;
+
+	// acceleration of gravity vector
+	inline CMagnitudeVector& GetGravityVector()
+	{
+		return Document->GravityVector;
+	}
+	// acceleration of gravity vector
+	__declspec( property( get = GetGravityVector ) )
+		CMagnitudeVector& GravityVector;
+
+	// acceleration of gravity X vector
+	inline CMagnitudeVector& GetGravityX()
+	{
+		return Document->GravityX;
+	}
+	// acceleration of gravity X vector
+	inline void SetGravityX( CMagnitudeVector& value )
+	{
+		Document->GravityX = value;
+	}
+	// acceleration of gravity X vector
+	__declspec( property( get = GetGravityX, put = SetGravityX ) )
+		CMagnitudeVector& GravityX;
+
+	// acceleration of gravity Y vector
+	inline CMagnitudeVector& GetGravityY()
+	{
+		return Document->GravityY;
+	}
+	// acceleration of gravity Y vector
+	inline void SetGravityY( CMagnitudeVector& value )
+	{
+		Document->GravityY = value;
+	}
+	// acceleration of gravity Y vector
+	__declspec( property( get = GetGravityY, put = SetGravityY ) )
+		CMagnitudeVector& GravityY;
+
+	// lunar velocity vector
+	inline CMagnitudeVector& GetVelocityVector()
+	{
+		return Document->VelocityVector;
+	}
+	// lunar velocity vector
+	inline void SetVelocityVector( CMagnitudeVector& value )
+	{
+		Document->VelocityVector = value;
+	}
+	// lunar velocity vector
+	__declspec( property( get = GetVelocityVector, put = SetVelocityVector ) )
+		CMagnitudeVector& VelocityVector;
+
+	// lunar velocity X vector
+	inline CMagnitudeVector& GetVelocityX()
+	{
+		return Document->VelocityX;
+	}
+	// lunar velocity X vector
+	inline void SetVelocityX( CMagnitudeVector& value )
+	{
+		Document->VelocityX = value;
+	}
+	// lunar velocity X vector
+	__declspec( property( get = GetVelocityX, put = SetVelocityX ) )
+		CMagnitudeVector& VelocityX;
+
+	// lunar velocity Y vector
+	inline CMagnitudeVector& GetVelocityY()
+	{
+		return Document->VelocityY;
+	}
+	// lunar velocity Y vector
+	inline void SetVelocityY( CMagnitudeVector& value )
+	{
+		Document->VelocityY= value;
+	}
+	// lunar velocity Y vector
+	__declspec( property( get = GetVelocityY, put = SetVelocityY ) )
+		CMagnitudeVector& VelocityY;
+
+	// lunar distance vector
+	inline CMagnitudeVector& GetDistanceVector()
+	{
+		return Document->DistanceVector;
+	}
+	// lunar distance vector
+	inline void SetDistanceVector( CMagnitudeVector& value )
+	{
+		Document->DistanceVector = value;
+	}
+	// lunar distance vector
+	__declspec( property( get = GetDistanceVector, put = SetDistanceVector ) )
+		CMagnitudeVector& DistanceVector;
+
+	// lunar distance X vector
+	inline CMagnitudeVector& GetDistanceX()
+	{
+		return Document->DistanceX;
+	}
+	// lunar distance X vector
+	inline void SetDistanceX( CMagnitudeVector& value )
+	{
+		Document->DistanceX = value;
+	}
+	// lunar distance X vector
+	__declspec( property( get = GetDistanceX, put = SetDistanceX ) )
+		CMagnitudeVector& DistanceX;
+
+	// lunar distance Y vector
+	inline CMagnitudeVector& GetDistanceY()
+	{
+		return Document->DistanceY;
+	}
+	// lunar distance Y vector
+	inline void SetDistanceY( CMagnitudeVector& value )
+	{
+		Document->DistanceY = value;
+	}
+	// lunar distance Y vector
+	__declspec( property( get = GetDistanceY, put = SetDistanceY ) )
+		CMagnitudeVector& DistanceY;
 
 	// public methods
 public:
@@ -633,12 +701,11 @@ protected:
 	// render the earth's shape
 	void RenderEarth( CDC* pDC );
 
-	// render the earth / moon triangle - the earth's acceleration is 
-	// applied toward's the earth along the triangle's hypotenuse, but
-	// in order to calculate velocity and position of the moon that 
-	// gravitational attraction needs to be broken into a vertical and
-	// horizontal vectors represented by the sides of the right triangle
-	void RenderTriangle( CDC* pDC );
+	// render acceleration vector
+	void RenderAcceleration( CDC* pDC );
+
+	// render velocity vector
+	void RenderVelocity( CDC* pDC );
 
 	// render the page or view
 	void render
@@ -692,7 +759,14 @@ protected:
 		bool bFlipY = false, // flip vertically
 		short nUp = -1, // moving up is a negative value
 		int nTextWidth = 0 // default width
-	);
+	)
+	{
+		CMagnitudeVector::BuildFont
+		( 
+			csFace, bBold, bItalic, nTextHeight, bVertical, 
+			font, dAngle, nCharSet, bFlipX, bFlipY, nUp, nTextWidth
+		);
+	}
 
 
 // Overrides
