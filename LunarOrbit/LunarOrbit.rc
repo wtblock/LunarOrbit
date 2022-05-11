@@ -117,6 +117,7 @@ BEGIN
     BUTTON      ID_EDIT_PASTE
     SEPARATOR
     BUTTON      ID_EDIT_SINGLEORBIT
+    BUTTON      ID_EDIT_30DEGSTEPS
     SEPARATOR
     BUTTON      ID_EDIT_PAUSE
     BUTTON      ID_EDIT_RUN
@@ -186,6 +187,7 @@ BEGIN
         MENUITEM "&Paste\tCtrl+V",              ID_EDIT_PASTE
         MENUITEM SEPARATOR
         MENUITEM "Single Orbit",                ID_EDIT_SINGLEORBIT
+        MENUITEM "30 Deg Steps",                ID_EDIT_30DEGSTEPS
         MENUITEM SEPARATOR
         MENUITEM "Pause",                       ID_EDIT_PAUSE, CHECKED
         MENUITEM "Run",                         ID_EDIT_RUN
@@ -473,6 +475,7 @@ BEGIN
     ID_EDIT_PAUSE           "Pause the model from running\nPause"
     ID_EDIT_RUN             "Start the model running\nRun"
     ID_EDIT_SINGLEORBIT     "When enabled, the model stops after a single orbit\nSingle"
+    ID_EDIT_30DEGSTEPS      "When checked, the model will stop every 30 degrees\n30 deg steps"
 END
 
 #endif    // English (United States) resources

@@ -24,22 +24,36 @@ CLunarOrbitDoc::CLunarOrbitDoc()
 {
 	AngleInDegrees = -90;
 
-	LunarVelocity = -1022; // meters per second
+	LunarVelocity = 1022; // meters per second
 	LunarVelocityX = 0; // meters per second
-	LunarVelocityY = -1022; // meters per second
+
+	// a positive Y velocity increases the Y distance to the earth
+	// which is counterintuitive at first glance because the 
+	// absolute y coordinate is getting smaller.
+	LunarVelocityY = 1022; // meters per second
 
 	MoonDistance = 382500000; // radius of lunar orbit
-	MoonInches = 4.0; // radius of the lunar orbit on screen
-	MoonX = MoonDistance;
+	MoonInches = 4.0; // radius of the lunar orbit on screen in inches
+
+	// distance to the earth's y axis in meters where a positive value
+	// indicates the earth is to the right of the moon and a negative
+	// value indicates the earth is to the left of the moon
+	MoonX = -MoonDistance;
+	// distance to the earth's x axis in meters where a
+	// positive value indicates the earth is below the moon and a
+	// negative value indicates the earth is above the moon
 	MoonY = 0;
-	StartX = MoonX;
-	StartY = 0;
 
 	MassOfTheEarth = 5.983e24; // kg
 
-	// acceleration of gravity on the moon from the earth
+	// absolute value of acceleration of gravity on the moon from the earth
 	const double dA = AccelerationOfGravity;
-	LunarGravityX = dA; // meters per second squared
+
+	// if the gravity is negative, the moon is being pulled left
+	// if the gravity is positive, the moon is being pulled right
+	LunarGravityX = -dA; // meters per second squared
+	// if the gravity is negative, the moon is being pulled up
+	// if the gravity is positive, the moon is being pulled down
 	LunarGravityY = 0; // meters per second squared
 
 	SampleTime = 1; // seconds

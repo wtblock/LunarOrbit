@@ -21,8 +21,6 @@ protected: // create from serialization only
 	double m_dMoonScaling; // distance scale meters to inches on screen
 	double m_dMoonX; // X coordinate of the moon in meters
 	double m_dMoonY; // Y coordinate of the moon in meters
-	double m_dStartX; // Start X coordinate of the moon in meters
-	double m_dStartY; // Start Y coordinate of the moon in meters
 	double m_dSampleTime; // time in seconds between samples
 	double m_dSamplesPerDay; // number of samples per day
 	double m_dRunningTime; // number of seconds the application has run
@@ -298,31 +296,37 @@ public:
 	__declspec( property( get = GetLunarVelocityY, put = SetLunarVelocityY ) )
 		double LunarVelocityY;
 
-	// distance to moon in meters from earth
+	// absolute distance to moon in meters with respect to the earth
+	// (the radius of the lunar orbit)
 	double GetMoonDistance()
 	{
 		return m_dMoonDistance;
 	}
-	// distance to moon in meters from earth
+	// absolute distance to moon in meters with respect to the earth
+	// (the radius of the lunar orbit)
 	void SetMoonDistance( double value )
 	{
 		m_dMoonDistance = value;
 	}
-	// distance to moon in meters from earth
+	// absolute distance to moon in meters with respect to the earth
+	// (the radius of the lunar orbit)
 	__declspec( property( get = GetMoonDistance, put = SetMoonDistance ) )
 		double MoonDistance;
 
 	// radius of lunar orbit around the earth on the screen
+	// in inches
 	double GetMoonInches()
 	{
 		return m_dMoonInches;
 	}
 	// radius of lunar orbit around the earth on the screen
+	// in inches
 	void SetMoonInches( double value )
 	{
 		m_dMoonInches = value;
 	}
 	// radius of lunar orbit around the earth on the screen
+	// in inches
 	__declspec( property( get = GetMoonInches, put = SetMoonInches ) )
 		double MoonInches;
 
@@ -381,7 +385,7 @@ public:
 	__declspec( property( get = GetLunarPeriod ) )
 		double LunarPeriod;
 
-	// acceleration of gravity on the moon in meters per second squared
+	// absolute value of acceleration of gravity on the moon from the earth
 	double GetAccelerationOfGravity()
 	{
 		// g = M/R²
@@ -403,93 +407,83 @@ public:
 
 		return m_dAccelerationOfGravity;
 	}
-	// acceleration of gravity on the moon
+	// absolute value of acceleration of gravity on the moon from the earth
 	__declspec( property( get = GetAccelerationOfGravity ) )
 		double AccelerationOfGravity;
 
-	// X gravity in meters per second squared
+	// if the gravity is negative, the moon is being pulled left
+	// if the gravity is positive, the moon is being pulled right
 	double GetLunarGravityX()
 	{
 		return m_dLunarGravityX;
 	}
-	// X gravity in meters per second
+	// if the gravity is negative, the moon is being pulled left
+	// if the gravity is positive, the moon is being pulled right
 	void SetLunarGravityX( double value )
 	{
 		m_dLunarGravityX = value;
 	}
-	// X gravity in meters per second
+	// if the gravity is negative, the moon is being pulled left
+	// if the gravity is positive, the moon is being pulled right
 	__declspec( property( get = GetLunarGravityX, put = SetLunarGravityX ) )
 		double LunarGravityX;
 
-	// Y gravity in meters per second
+	// if the gravity is negative, the moon is being pulled up
+	// if the gravity is positive, the moon is being pulled down
 	double GetLunarGravityY()
 	{
 		return m_dLunarGravityY;
 	}
-	// Y gravity in meters per second
+	// if the gravity is negative, the moon is being pulled up
+	// if the gravity is positive, the moon is being pulled down
 	void SetLunarGravityY( double value )
 	{
 		m_dLunarGravityY = value;
 	}
-	// Y gravity in meters per second
+	// if the gravity is negative, the moon is being pulled up
+	// if the gravity is positive, the moon is being pulled down
 	__declspec( property( get = GetLunarGravityY, put = SetLunarGravityY ) )
 		double LunarGravityY;
 
-	// X coordinate of the moon in meters
+	// distance to the earth's y axis in meters where a positive value
+	// indicates the earth is to the right of the moon and a negative
+	// value indicates the earth is to the left of the moon
 	double GetMoonX()
 	{
 		return m_dMoonX;
 	}
-	// X coordinate of the moon in meters
+	// distance to the earth's y axis in meters where a positive value
+	// indicates the earth is to the right of the moon and a negative
+	// value indicates the earth is to the left of the moon
 	void SetMoonX( double value )
 	{
 		m_dMoonX = value;
 	}
-	// X coordinate of the moon in meters
+	// distance to the earth's y axis in meters where a positive value
+	// indicates the earth is to the right of the moon and a negative
+	// value indicates the earth is to the left of the moon
 	__declspec( property( get = GetMoonX, put = SetMoonX ) )
 		double MoonX;
 
-	// Y coordinate of the moon in meters
+	// distance to the earth's x axis in meters where a
+	// positive value indicates the earth is below the moon and a
+	// negative value indicates the earth is above the moon
 	double GetMoonY()
 	{
 		return m_dMoonY;
 	}
-	// Y coordinate of the moon in meters
+	// distance to the earth's x axis in meters where a
+	// positive value indicates the earth is below the moon and a
+	// negative value indicates the earth is above the moon
 	void SetMoonY( double value )
 	{
 		m_dMoonY = value;
 	}
-	// Y coordinate of the moon in meters
+	// distance to the earth's x axis in meters where a
+	// positive value indicates the earth is below the moon and a
+	// negative value indicates the earth is above the moon
 	__declspec( property( get = GetMoonY, put = SetMoonY ) )
 		double MoonY;
-
-	// Start X coordinate of the moon in meters
-	double GetStartX()
-	{
-		return m_dStartX;
-	}
-	// Start X coordinate of the moon in meters
-	void SetStartX( double value )
-	{
-		m_dStartX = value;
-	}
-	// Start X coordinate of the moon in meters
-	__declspec( property( get = GetStartX, put = SetStartX ) )
-		double StartX;
-
-	// Start Y coordinate of the moon in meters
-	double GetStartY()
-	{
-		return m_dStartY;
-	}
-	// Start Y coordinate of the moon in meters
-	void SetStartY( double value )
-	{
-		m_dStartY = value;
-	}
-	// Start Y coordinate of the moon in meters
-	__declspec( property( get = GetStartY, put = SetStartY ) )
-		double StartY;
 
 	// time in seconds between samples
 	double GetSampleTime()
@@ -567,7 +561,7 @@ public:
 		return int( dValue * nMap );
 	}
 
-	// point defining the earth's center
+	// point defining the earth's center in logical coordinates
 	CPoint GetEarthCenter()
 	{
 		// get the center of the earth on the document
@@ -580,11 +574,11 @@ public:
 		CPoint value( nX, nY );
 		return value;
 	}
-	// point defining the earth's center
+	// point defining the earth's center in logical coordinates
 	__declspec( property( get = GetEarthCenter ) )
 		CPoint EarthCenter;
 
-	// rectangle defining the earth
+	// rectangle defining the earth in logical coordinates
 	CRect GetEarthRectangle()
 	{
 		// get the center of the earth on the document
@@ -602,11 +596,13 @@ public:
 		value.OffsetRect( -size.cx / 2, -size.cy / 2 );
 		return value;
 	}
-	// rectangle defining the earth
+	// rectangle defining the earth in logical coordinates
 	__declspec( property( get = GetEarthRectangle ) )
 		CRect EarthRectangle;
 
-	// center of the moon relative to the earth
+	// center of the moon relative to the earth where
+	// a negative x indicates the earth is to the left of the moon
+	// a negative y indicates the earth is above the moon
 	CPoint GetMoonCenterRelativeToEarth()
 	{
 		// x and y coordinates of the moon relative to the earth
@@ -629,25 +625,29 @@ public:
 
 		return value;
 	}
-	// center of the moon relative to the earth
+	// center of the moon relative to the earth where
+	// a negative x indicates the earth is to the left of the moon
+	// a negative y indicates the earth is above the moon
 	__declspec( property( get = GetMoonCenterRelativeToEarth ) )
 		CPoint MoonCenterRelativeToEarth;
 
-	// point defining the moon's center
+	// point defining the moon's center in logical coordinates
 	CPoint GetMoonCenter()
 	{
-		// build the point starting with the earth's center
+		// build the point starting with the earth's center in logical coordinates
 		CPoint value = EarthCenter;
 
 		// get the moon's center relative to the earth
 		CPoint moon = MoonCenterRelativeToEarth;
 
-		// offset the earth center by the moon's relative coordinates
-		value.Offset( moon );
+		// offset the earth center by the moon's relative coordinates and since
+		// the coordinates are from the moon's perspective, the coordinates 
+		// need to be negated in order to get the correct offset
+		value.Offset( -moon.x, -moon.y );
 
 		return value;
 	}
-	// point defining the moon's center
+	// point defining the moon's center in logical coordinates
 	__declspec( property( get = GetMoonCenter ) )
 		CPoint MoonCenter;
 

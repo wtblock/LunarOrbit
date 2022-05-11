@@ -35,6 +35,8 @@ BEGIN_MESSAGE_MAP(CLunarOrbitView, CScrollView)
 	ON_UPDATE_COMMAND_UI( ID_EDIT_RUN, &CLunarOrbitView::OnUpdateEditRun )
 	ON_COMMAND( ID_EDIT_SINGLEORBIT, &CLunarOrbitView::OnEditSingleOrbit )
 	ON_UPDATE_COMMAND_UI( ID_EDIT_SINGLEORBIT, &CLunarOrbitView::OnUpdateEditSingleorbit )
+	ON_COMMAND( ID_EDIT_30DEGSTEPS, &CLunarOrbitView::OnEdit30DegSteps )
+	ON_UPDATE_COMMAND_UI( ID_EDIT_30DEGSTEPS, &CLunarOrbitView::OnUpdateEdit30DegSteps )
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -42,6 +44,7 @@ CLunarOrbitView::CLunarOrbitView()
 {
 	Running = false;
 	SingleOrbit = false;
+	ThirtyDegreeSteps = false;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -749,6 +752,8 @@ void CLunarOrbitView::RenderMoon( CDC * pDC )
 	// draw the moon as an ellipse that fits into the rectangle
 	pDC->Ellipse( &rectMoon );
 
+	// the coordinates represent the distance to earth from the moon
+	// in logical coordinates
 	CPoint ptMoon = MoonCenterRelativeToEarth;
 	CString csCoor;
 	csCoor.Format( _T( "%d,%d" ), ptMoon.x, ptMoon.y );
@@ -764,8 +769,8 @@ void CLunarOrbitView::RenderMoon( CDC * pDC )
 		_T( "Arial" ), false, false, nTextHeight, false, font
 	);
 
-	// cyan color
-	const COLORREF rgbCyan = RGB( 0, 255, 255 );
+	// dark cyan color
+	const COLORREF rgbCyan = RGB( 0, 128, 128 );
 
 	const COLORREF rgbOld = pDC->SetTextColor( rgbCyan );
 	const int nBM = pDC->SetBkMode( TRANSPARENT );
@@ -984,19 +989,41 @@ void CLunarOrbitView::UpdateMoonPosition()
 
 		// the new X velocity in the X direction is the original X velocity
 		// plus X acceleration multiplied by the time increment
-		const double dNewVx = dVx + dNewAx * dSt;
+		const double dNewVx = dVx + dAx * dSt;
 
 		// the new Y velocity in the Y direction is the original Y velocity
 		// plus Y acceleration multiplied by the time increment
-		const double dNewVy = dVy + dNewAy * dSt;
+		const double dNewVy = dVy + dAy * dSt;
 
 		// the new X position is the original X position plus the X velocity
 		// multiplied by the time increment
-		const double dNewX = dX + dNewVx * dSt;
+		const double dNewX = dX + dVx * dSt;
 
 		// the new Y position is the original Y position plus the Y velocity
 		// multiplied by the time increment
-		const double dNewY = dY + dNewVy * dSt;
+		const double dNewY = dY + dVy * dSt;
+
+		// test the current angle of the gravity vector if doing
+		// 30 degree steps
+		const bool bThirtyDegreeSteps = ThirtyDegreeSteps;
+		if ( bThirtyDegreeSteps && dTime > 3600 )
+		{
+			pDoc->MoonX = dNewX; // X distance
+			pDoc->MoonY = dNewY; // Y distance
+
+			// update the gravity vector with the moon's new position
+			GravityVector.FirstPoint = MoonCenter;
+
+			const double dAngle = GravityVector.Degrees;
+			const double dMod = fmod( dAngle, 30.0 );
+			const bool bThirty = NearlyEqual( dMod, 0.0, 0.03 );
+			if ( bThirty )
+			{
+				KillTimer( 1 );
+				Running = false;
+				bDone = true;
+			}
+		}
 
 		// are we doing a single orbit?
 		const bool bSingleOrbit = SingleOrbit;
@@ -1010,9 +1037,9 @@ void CLunarOrbitView::UpdateMoonPosition()
 			// difference between the previous X and the new one
 			const double dDelta = dNewX - dX;
 
-			// if the delta is negative, we have reached the beginning
+			// if the delta is positive, we have reached the beginning
 			// of the orbit
-			if ( dDelta < 0 )
+			if ( dDelta > 0 )
 			{
 				KillTimer( 1 );
 				Running = false;
@@ -1256,8 +1283,8 @@ void CLunarOrbitView::OnUpdateEditRun( CCmdUI *pCmdUI )
 // toggle single orbit flag
 void CLunarOrbitView::OnEditSingleOrbit()
 {
-	const bool bSingleOrbit = SingleOrbit;
-	if ( bSingleOrbit )
+	const bool value = SingleOrbit;
+	if ( value )
 	{
 		SingleOrbit = false;
 	}
@@ -1271,8 +1298,29 @@ void CLunarOrbitView::OnEditSingleOrbit()
 // single orbit UI handler to check / uncheck the menu item
 void CLunarOrbitView::OnUpdateEditSingleorbit( CCmdUI *pCmdUI )
 {
-	const bool bSingleOrbit = SingleOrbit;
-	pCmdUI->SetCheck( bSingleOrbit == true );
+	const bool value = SingleOrbit;
+	pCmdUI->SetCheck( value == true );
+}
+
+/////////////////////////////////////////////////////////////////////////////
+void CLunarOrbitView::OnEdit30DegSteps()
+{
+	const bool value = ThirtyDegreeSteps;
+	if ( value )
+	{
+		ThirtyDegreeSteps = false;
+	}
+	else // false
+	{
+		ThirtyDegreeSteps = true;
+	}
+}
+
+/////////////////////////////////////////////////////////////////////////////
+void CLunarOrbitView::OnUpdateEdit30DegSteps( CCmdUI *pCmdUI )
+{
+	const bool value = ThirtyDegreeSteps;
+	pCmdUI->SetCheck( value == true );
 }
 
 /////////////////////////////////////////////////////////////////////////////

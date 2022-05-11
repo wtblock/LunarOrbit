@@ -27,6 +27,7 @@ protected: // create from serialization only
 	int m_nNumPages;
 	bool m_bRunning;
 	bool m_bSingleOrbit;
+	bool m_bThirtyDegreeSteps;
 	vector<CPoint> m_OrbitPoints;
 
 	// properties
@@ -200,19 +201,33 @@ public:
 	__declspec( property( get = GetRunning, put = SetRunning ) )
 		bool Running;
 
-	// running?
+	// stop the model after a single orbit
 	bool GetSingleOrbit()
 	{
 		return m_bSingleOrbit;
 	}
-	// running?
+	// stop the model after a single orbit
 	void SetSingleOrbit( bool value )
 	{
 		m_bSingleOrbit = value;
 	}
-	// running?
+	// stop the model after a single orbit
 	__declspec( property( get = GetSingleOrbit, put = SetSingleOrbit ) )
 		bool SingleOrbit;
+
+	// stop the model every 30 degrees
+	bool GetThirtyDegreeSteps()
+	{
+		return m_bThirtyDegreeSteps;
+	}
+	// stop the model every 30 degrees
+	void SetThirtyDegreeSteps( bool value )
+	{
+		m_bThirtyDegreeSteps = value;
+	}
+	// stop the model every 30 degrees
+	__declspec( property( get = GetThirtyDegreeSteps, put = SetThirtyDegreeSteps ) )
+		bool ThirtyDegreeSteps;
 
 	// get bottom of view in inches
 	double GetBottomOfView()
@@ -413,29 +428,29 @@ public:
 	__declspec( property( get = GetMoonScaling, put = SetMoonScaling ) )
 		double MoonScaling;
 
-	// point defining the earth's center
+	// point defining the earth's center in logical coordinates
 	CPoint GetEarthCenter()
 	{
 		CLunarOrbitDoc* pDoc = Document;
 		CPoint value = pDoc->EarthCenter;
 		return value;
 	}
-	// point defining the earth's center
+	// point defining the earth's center in logical coordinates
 	__declspec( property( get = GetEarthCenter ) )
 		CPoint EarthCenter;
 
-	// rectangle defining the earth
+	// rectangle defining the earth in logical coordinates
 	CRect GetEarthRectangle()
 	{
 		CLunarOrbitDoc* pDoc = Document;
 		CRect value = pDoc->EarthRectangle;
 		return value;
 	}
-	// rectangle defining the earth
+	// rectangle defining the earth in logical coordinates
 	__declspec( property( get = GetEarthRectangle ) )
 		CRect EarthRectangle;
 
-	// center of the moon relative to the earth
+	// center of the moon relative to the earth in logical coordinates
 	CPoint GetMoonCenterRelativeToEarth()
 	{
 		CLunarOrbitDoc* pDoc = Document;
@@ -457,14 +472,14 @@ public:
 	__declspec( property( get = GetMoonCenter ) )
 		CPoint MoonCenter;
 
-	// rectangle defining the moon
+	// rectangle defining the moon in logical unit
 	CRect GetMoonRectangle()
 	{
 		CLunarOrbitDoc* pDoc = Document;
 		CRect value = pDoc->MoonRectangle;
 		return value;
 	}
-	// rectangle defining the moon
+	// rectangle defining the moon in logical unit
 	__declspec( property( get = GetMoonRectangle ) )
 		CRect MoonRectangle;
 
@@ -808,6 +823,8 @@ public:
 	afx_msg void OnUpdateEditRun( CCmdUI *pCmdUI );
 	afx_msg void OnEditSingleOrbit();
 	afx_msg void OnUpdateEditSingleorbit( CCmdUI *pCmdUI );
+	afx_msg void OnEdit30DegSteps();
+	afx_msg void OnUpdateEdit30DegSteps( CCmdUI *pCmdUI );
 };
 
 #ifndef _DEBUG  // debug version in LunarOrbitView.cpp
