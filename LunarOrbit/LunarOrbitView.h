@@ -28,6 +28,7 @@ protected: // create from serialization only
 	bool m_bRunning;
 	bool m_bSingleOrbit;
 	bool m_bThirtyDegreeSteps;
+	double m_dAngleError;
 	vector<CPoint> m_OrbitPoints;
 
 	// properties
@@ -186,6 +187,20 @@ public:
 	// top of view in inches
 	__declspec( property( get = GetTopOfView, put = SetTopOfView ) )
 		double TopOfView;
+
+	// margin of error when comparing angles
+	double GetAngleError()
+	{
+		return m_dAngleError;
+	}
+	// margin of error when comparing angles
+	void SetAngleError( double value )
+	{
+		m_dAngleError = value;
+	}
+	// margin of error when comparing angles
+	__declspec( property( get = GetAngleError, put = SetAngleError ) )
+		double AngleError;
 
 	// running?
 	bool GetRunning()
@@ -701,8 +716,20 @@ protected:
 	// render the equations of motion
 	void RenderEquations( CDC* pDC );
 
-	// render the text information
-	void RenderText( CDC* pDC );
+	// render the initial condition text
+	void RenderInitialConditions( CDC* pDC );
+
+	// render the distance text information
+	void RenderDistanceText( CDC* pDC );
+
+	// render the gravity text information
+	void RenderGravityText( CDC* pDC );
+
+	// render the velocity text information
+	void RenderVelocityText( CDC* pDC );
+
+	// render the grid labels
+	void RenderGridLabels( CDC* pDC );
 
 	// render the grid
 	void RenderGrid( CDC* pDC );
@@ -715,6 +742,9 @@ protected:
 
 	// render the earth's shape
 	void RenderEarth( CDC* pDC );
+
+	// render distance vector
+	void RenderDistance( CDC* pDC );
 
 	// render acceleration vector
 	void RenderAcceleration( CDC* pDC );

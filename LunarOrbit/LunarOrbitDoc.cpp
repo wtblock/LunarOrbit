@@ -22,7 +22,7 @@ END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
 CLunarOrbitDoc::CLunarOrbitDoc()
 {
-	AngleInDegrees = -90;
+	AngleInDegrees = 180;
 
 	LunarVelocity = 1022; // meters per second
 	LunarVelocityX = 0; // meters per second
@@ -61,22 +61,10 @@ CLunarOrbitDoc::CLunarOrbitDoc()
 	RunningTime = 0; // seconds
 	const double dLunarPeriod = LunarPeriod;
 
-	// the gravity vector starts at the moon's center and ends at
+	// the distance vector starts at the moon's center and ends at
 	// the earth's center
-	GravityVector.FirstPoint = MoonCenter;
-	GravityVector.SecondPoint = EarthCenter;
-	GravityVector.RealMagnitude = dA;
-	GravityVector.EngineeringUnits = _T( "m/s²" );
-	GravityVector.Description = _T( "Ag" );
-
-	// X and y components of the earth's gravitational pull on the moon
-	GravityX = GravityVector.VectorX;
-	GravityX.Description = _T( "Ax" );
-	GravityY = GravityVector.VectorY;
-	GravityY.Description = _T( "Ay" );
-
-	// copy the distance vector from the acceleration vector
-	DistanceVector = GravityVector;
+	DistanceVector.FirstPoint = MoonCenter;
+	DistanceVector.SecondPoint = EarthCenter;
 
 	// the distance magnitude is the absolute distance to the earth
 	DistanceVector.RealMagnitude = fabs( MoonDistance );
@@ -102,6 +90,26 @@ CLunarOrbitDoc::CLunarOrbitDoc()
 	DistanceY = DistanceVector.VectorY;
 	DistanceY.Description = _T( "Sy" );
 
+	// the gravity vector starts at the moon's center and ends at
+	// the earth's center
+	GravityVector.FirstPoint = MoonCenter;
+	GravityVector.SecondPoint = EarthCenter;
+
+	// set the gravity vector's length to two inches or half the
+	// radius of the orbit
+	const double dGravityLength = InchesToLogical( 2.0 );
+	GravityVector.Length = dGravityLength;
+
+	GravityVector.RealMagnitude = dA;
+	GravityVector.EngineeringUnits = _T( "m/s²" );
+	GravityVector.Description = _T( "Ag" );
+
+	// X and y components of the earth's gravitational pull on the moon
+	GravityX = GravityVector.VectorX;
+	GravityX.Description = _T( "Ax" );
+	GravityY = GravityVector.VectorY;
+	GravityY.Description = _T( "Ay" );
+
 	// copy the velocity vector from the acceleration vector
 	VelocityVector = GravityVector;
 
@@ -109,8 +117,8 @@ CLunarOrbitDoc::CLunarOrbitDoc()
 	VelocityVector.RealMagnitude = fabs( LunarVelocity );
 
 	// set the vector's length to one inch
-	const double dLength = InchesToLogical( 1.0 );
-	VelocityVector.Length = dLength;
+	const double dVelocityLength = InchesToLogical( 1.0 );
+	VelocityVector.Length = dVelocityLength;
 
 	// set the vector's description to "Vg" velocity due to gravity
 	VelocityVector.Description = _T( "Vg" );

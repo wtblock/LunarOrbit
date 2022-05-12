@@ -45,6 +45,8 @@ CLunarOrbitView::CLunarOrbitView()
 	Running = false;
 	SingleOrbit = false;
 	ThirtyDegreeSteps = false;
+	TopOfView = 0;
+	AngleError = 0.01; // tenth of a degree
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -114,6 +116,8 @@ void CLunarOrbitView::OnDraw( CDC* pDC )
 void CLunarOrbitView::OnInitialUpdate()
 {
 	CScrollView::OnInitialUpdate();
+
+	OnVScroll( SB_TOP, 0, nullptr );
 
 	Invalidate();
 
@@ -371,8 +375,8 @@ void CLunarOrbitView::RenderEquations( CDC * pDC )
 	// margin around the document in logical pixels (device independent)
 	const int nMargin = LogicalDocumentMargin;
 
-	// text color is blue
-	COLORREF rgbBlue( RGB( 0, 0, 255 ) );
+	// text color is orange
+	COLORREF rgbBlue( RGB( 255, 127, 0 ) );
 
 	// 0.12 inch size
 	const int nTextHeight = InchesToLogical( 0.25 );
@@ -446,8 +450,8 @@ void CLunarOrbitView::RenderEquations( CDC * pDC )
 } // RenderEquations
 
 /////////////////////////////////////////////////////////////////////////////
-// render the text information
-void CLunarOrbitView::RenderText( CDC * pDC )
+// render the initial condition text in dark green on the top right
+void CLunarOrbitView::RenderInitialConditions( CDC * pDC )
 {
 	// pointer to the document information
 	CLunarOrbitDoc* pDoc = Document;
@@ -458,8 +462,8 @@ void CLunarOrbitView::RenderText( CDC * pDC )
 	// 0.12 inch size
 	const int nTextHeight = InchesToLogical( 0.25 );
 
-	// text color
-	COLORREF rgbText( RGB( 0, 128, 0 ));
+	// text color is dark green
+	COLORREF rgbText( RGB( 0, 128, 0 ) );
 
 	// create a font for text output
 	CFont font;
@@ -469,32 +473,16 @@ void CLunarOrbitView::RenderText( CDC * pDC )
 	);
 
 	// labels for information to be displayed on the output device
-	CString 
-		csMassOfEarth,
-		csSample, csSamplesPerDay, csRunningTime, 
-		csAngleG, csAngleV;
-	
+	CString
+		csMassOfEarth, csSample, csSamplesPerDay, csRunningTime;
+
 	csMassOfEarth.Format
 	(
 		_T( "Me=%g kg" ), pDoc->MassOfTheEarth
 	);
-	const CString csGravity = GravityVector.Label;
-	const CString csGravityX = GravityX.Label;
-	const CString csGravityY = GravityY.Label;
-	csAngleG.Format( _T( "Ag angle=%0.02f �" ), GravityVector.Degrees );
-
-	const CString csDistance = DistanceVector.Label;
-	const CString csDistanceX = DistanceX.Label;
-	const CString csDistanceY = DistanceY.Label;
-
-	const CString csVelocity = VelocityVector.Label;
-	const CString csVelocityX = VelocityX.Label;
-	const CString csVelocityY = VelocityY.Label;
-	csAngleV.Format( _T( "Vg angle=%0.02f �" ), VelocityVector.Degrees );
-
 	csSample.Format
 	(
-		_T( "Time slice=%0.0f s" ), SampleTime
+		_T( "Time slice=%0.1f s" ), SampleTime
 	);
 	csSamplesPerDay.Format
 	(
@@ -513,13 +501,6 @@ void CLunarOrbitView::RenderText( CDC * pDC )
 	const int nTA = pDC->SetTextAlign( TA_RIGHT | TA_BASELINE );
 	COLORREF rgbOld = pDC->SetTextColor( rgbText );
 
-	// center of the earth on the document
-	CPoint ptEarth = EarthCenter;
-
-	// document dimensions
-	const int nDocWidth = InchesToLogical( DocumentWidth );
-	const int nDocHeight = InchesToLogical( DocumentHeight );
-
 	// right justified to the right margin
 	int nX = LogicalDocumentWidth - 2 * nMargin;
 	int nY = 2 * nMargin;
@@ -532,8 +513,101 @@ void CLunarOrbitView::RenderText( CDC * pDC )
 	pDC->TextOut( nX, nY, csSamplesPerDay );
 	nY += nTextHeight;
 	pDC->TextOut( nX, nY, csRunningTime );
+
+	// restore the device context
+	pDC->SetTextColor( rgbOld );
+	pDC->SetTextAlign( nTA );
+	pDC->SelectObject( pOldFont );
+
+} // RenderInitialConditions
+
+/////////////////////////////////////////////////////////////////////////////
+// render the distance text information
+void CLunarOrbitView::RenderDistanceText( CDC* pDC )
+{
+	// 0.12 inch size
+	const int nTextHeight = InchesToLogical( 0.25 );
+
+	// create a font for text output
+	CFont font;
+	BuildFont
+	(
+		_T( "Arial" ), false, false, nTextHeight, false, font
+	);
+
+	const CString csDistance = DistanceVector.Label;
+	const CString csDistanceX = DistanceX.Label;
+	const CString csDistanceY = DistanceY.Label;
+	CString csAngle;
+	csAngle.Format( _T( "S angle=%0.02f �" ), DistanceVector.Degrees );
+
+	// prepare the device context
+	CFont* pOldFont = pDC->SelectObject( &font );
+	const int nTA = pDC->SetTextAlign( TA_RIGHT | TA_BASELINE );
+	COLORREF rgbOld = pDC->SetTextColor( DistanceVector.Color );
+
+	// document dimensions
+	const int nDocWidth = InchesToLogical( DocumentWidth );
+	const int nDocHeight = InchesToLogical( DocumentHeight );
+
+	// margin around the document in logical pixels (device independent)
+	const int nMargin = LogicalDocumentMargin;
+
+	// right justified to these coordinates
+	int nX = 10 * nMargin;
+	int nY = nDocHeight - 6 * nMargin;
+
+	pDC->TextOut( nX, nY, csDistance );
 	nY += nTextHeight;
+	pDC->TextOut( nX, nY, csDistanceX );
 	nY += nTextHeight;
+	pDC->TextOut( nX, nY, csDistanceY );
+	nY += nTextHeight;
+	pDC->TextOut( nX, nY, csAngle );
+
+	// restore the device context
+	pDC->SetTextColor( rgbOld );
+	pDC->SetTextAlign( nTA );
+	pDC->SelectObject( pOldFont );
+
+} // RenderDistanceText
+
+/////////////////////////////////////////////////////////////////////////////
+// render the gravity text information
+void CLunarOrbitView::RenderGravityText( CDC* pDC )
+{
+	// 0.12 inch size
+	const int nTextHeight = InchesToLogical( 0.25 );
+
+	// create a font for text output
+	CFont font;
+	BuildFont
+	(
+		_T( "Arial" ), false, false, nTextHeight, false, font
+	);
+
+	const CString csGravity = GravityVector.Label;
+	const CString csGravityX = GravityX.Label;
+	const CString csGravityY = GravityY.Label;
+	CString csAngle;
+	csAngle.Format( _T( "Ag angle=%0.02f �" ), GravityVector.Degrees );
+
+
+	// prepare the device context
+	CFont* pOldFont = pDC->SelectObject( &font );
+	const int nTA = pDC->SetTextAlign( TA_RIGHT | TA_BASELINE );
+	COLORREF rgbOld = pDC->SetTextColor( GravityVector.Color );
+
+	// document dimensions
+	const int nDocWidth = InchesToLogical( DocumentWidth );
+	const int nDocHeight = InchesToLogical( DocumentHeight );
+
+	// margin around the document in logical pixels (device independent)
+	const int nMargin = LogicalDocumentMargin;
+
+	// right justified to these coordinates
+	int nX = 26 * nMargin;
+	int nY = nDocHeight - 6 * nMargin;
 
 	pDC->SetTextColor( GravityVector.Color );
 	pDC->TextOut( nX, nY, csGravity );
@@ -542,39 +616,108 @@ void CLunarOrbitView::RenderText( CDC * pDC )
 	nY += nTextHeight;
 	pDC->TextOut( nX, nY, csGravityY );
 	nY += nTextHeight;
-	pDC->TextOut( nX, nY, csAngleG );
+	pDC->TextOut( nX, nY, csAngle );
 
-	nY = InchesToLogical( 6.0 );
-	pDC->SetTextColor( VelocityVector.Color );
+	// restore the device context
+	pDC->SetTextColor( rgbOld );
+	pDC->SetTextAlign( nTA );
+	pDC->SelectObject( pOldFont );
+} // RenderGravityText
+
+/////////////////////////////////////////////////////////////////////////////
+// render the velocity text information
+void CLunarOrbitView::RenderVelocityText( CDC* pDC )
+{
+	// 0.12 inch size
+	const int nTextHeight = InchesToLogical( 0.25 );
+
+	// create a font for text output
+	CFont font;
+	BuildFont
+	(
+		_T( "Arial" ), false, false, nTextHeight, false, font
+	);
+
+	const CString csVelocity = VelocityVector.Label;
+	const CString csVelocityX = VelocityX.Label;
+	const CString csVelocityY = VelocityY.Label;
+	CString csAngle;
+	csAngle.Format( _T( "Vg angle=%0.02f �" ), VelocityVector.Degrees );
+
+	// prepare the device context
+	CFont* pOldFont = pDC->SelectObject( &font );
+	const int nTA = pDC->SetTextAlign( TA_RIGHT | TA_BASELINE );
+	COLORREF rgbOld = pDC->SetTextColor( VelocityVector.Color );
+
+	// document dimensions
+	const int nDocWidth = InchesToLogical( DocumentWidth );
+	const int nDocHeight = InchesToLogical( DocumentHeight );
+
+	// margin around the document in logical pixels (device independent)
+	const int nMargin = LogicalDocumentMargin;
+
+	// right justified to the right margin
+	int nX = LogicalDocumentWidth - 2 * nMargin;
+	int nY = nDocHeight - 6 * nMargin;
+
 	pDC->TextOut( nX, nY, csVelocity );
 	nY += nTextHeight;
 	pDC->TextOut( nX, nY, csVelocityX );
 	nY += nTextHeight;
 	pDC->TextOut( nX, nY, csVelocityY );
 	nY += nTextHeight;
-	pDC->TextOut( nX, nY, csAngleV );
-	nY += nTextHeight;
-	nY += nTextHeight;
+	pDC->TextOut( nX, nY, csAngle );
 
-	pDC->SetTextColor( DistanceVector.Color );
-	pDC->TextOut( nX, nY, csDistance );
-	nY += nTextHeight;
-	pDC->TextOut( nX, nY, csDistanceX );
-	nY += nTextHeight;
-	pDC->TextOut( nX, nY, csDistanceY );
-	nY += nTextHeight;
-	nY += nTextHeight;
+	// restore the device context
+	pDC->SetTextColor( rgbOld );
+	pDC->SetTextAlign( nTA );
+	pDC->SelectObject( pOldFont );
+} // RenderVelocityText
+
+/////////////////////////////////////////////////////////////////////////////
+// render the grid labels
+void CLunarOrbitView::RenderGridLabels( CDC* pDC )
+{
+	// pointer to the document information
+	CLunarOrbitDoc* pDoc = Document;
+
+	// margin around the document in logical pixels (device independent)
+	const int nMargin = LogicalDocumentMargin;
+
+	// 0.12 inch size
+	const int nTextHeight = InchesToLogical( 0.25 );
+
+	// create a font for text output
+	CFont font;
+	BuildFont
+	(
+		_T( "Arial" ), false, false, nTextHeight, false, font
+	);
+
+	// center of the earth on the document
+	CPoint ptEarth = EarthCenter;
+
+	// prepare the device context
+	CFont* pOldFont = pDC->SelectObject( &font );
+
+	// document dimensions
+	const int nDocWidth = InchesToLogical( DocumentWidth );
+	const int nDocHeight = InchesToLogical( DocumentHeight );
+
+	// right justified to the right margin
+	int nX = LogicalDocumentWidth - 2 * nMargin;
+	int nY = 2 * nMargin;
 
 	// labels beside the grid
-	COLORREF rgbScale( RGB( 255, 0, 0 ));
-	const CString csLabelX( _T( "X (Inches)" ));
+	COLORREF rgbScale( RGB( 255, 0, 0 ) );
+	const CString csLabelX( _T( "X (Inches)" ) );
 	const CString csLabelY( _T( "Y (Inches)" ) );
 
-	pDC->SetTextColor( rgbScale );
-	pDC->SetTextAlign( TA_CENTER | TA_BOTTOM );
+	COLORREF rgbOld = pDC->SetTextColor( rgbScale );
+	int nTA = pDC->SetTextAlign( TA_CENTER | TA_BOTTOM );
 	pDC->TextOut( ptEarth.x, nMargin, csLabelX );
 	pDC->TextOut( ptEarth.x, nDocHeight - nMargin, csLabelX );
-	
+
 	// create a font for vertical text output
 	CFont fontY;
 	BuildFont
@@ -591,8 +734,7 @@ void CLunarOrbitView::RenderText( CDC * pDC )
 	pDC->SetTextColor( rgbOld );
 	pDC->SetTextAlign( nTA );
 	pDC->SelectObject( pOldFont );
-
-} // RenderText
+} // RenderGridLabels
 
 /////////////////////////////////////////////////////////////////////////////
 // render the grid
@@ -829,6 +971,17 @@ void CLunarOrbitView::RenderEarth( CDC * pDC )
 } // RenderEarth
 
 /////////////////////////////////////////////////////////////////////////////
+// draw the distance vector centered on the moon
+void CLunarOrbitView::RenderDistance( CDC * pDC )
+{
+	// draw all three vectors
+	DistanceVector.Draw( pDC );
+	DistanceX.Draw( pDC );
+	DistanceY.Draw( pDC );
+
+} // RenderDistance
+
+/////////////////////////////////////////////////////////////////////////////
 // draw the acceleration vector centered on the moon
 void CLunarOrbitView::RenderAcceleration( CDC * pDC )
 {
@@ -881,8 +1034,23 @@ void CLunarOrbitView::render
 	// render Newton's equations of motion
 	RenderEquations( pDC );
 
-	// draw the textual information 
-	RenderText( pDC );
+	// render the initial condition text
+	RenderInitialConditions( pDC );
+
+	// render the distance text information
+	RenderDistanceText( pDC );
+
+	// render the gravity text information
+	RenderGravityText( pDC );
+
+	// render the velocity text information
+	RenderVelocityText( pDC );
+
+	// render the grid labels
+	RenderGridLabels( pDC );
+
+	//// draw the textual information 
+	//RenderText( pDC );
 
 	// draw the document grid
 	RenderGrid( pDC );
@@ -895,6 +1063,9 @@ void CLunarOrbitView::render
 
 	// draw the earth's shape
 	RenderEarth( pDC );
+
+	// render the distance vector
+	RenderDistance( pDC );
 
 	// render the acceleration vector
 	RenderAcceleration( pDC );
@@ -972,6 +1143,8 @@ void CLunarOrbitView::UpdateMoonPosition()
 	// the length of a time slice in seconds
 	const double dSt = pDoc->SampleTime;
 
+	double dOldAngle = DistanceVector.Degrees;
+
 	// are we done with a complete cycle
 	bool bDone = false;
 
@@ -1006,17 +1179,23 @@ void CLunarOrbitView::UpdateMoonPosition()
 		// test the current angle of the gravity vector if doing
 		// 30 degree steps
 		const bool bThirtyDegreeSteps = ThirtyDegreeSteps;
+
+		// do not begin testing for an hour so we are not stopped on the
+		// initial reading
 		if ( bThirtyDegreeSteps && dTime > 3600 )
 		{
-			pDoc->MoonX = dNewX; // X distance
-			pDoc->MoonY = dNewY; // Y distance
+			pDoc->MoonX = dNewX;
+			pDoc->MoonY = dNewY;
 
-			// update the gravity vector with the moon's new position
-			GravityVector.FirstPoint = MoonCenter;
+			DistanceVector.FirstPoint = MoonCenter;
+			const double dAngle = DistanceVector.Degrees;
 
-			const double dAngle = GravityVector.Degrees;
+			const double dDelta = dOldAngle - dAngle;
+			dOldAngle = dAngle;
 			const double dMod = fmod( dAngle, 30.0 );
-			const bool bThirty = NearlyEqual( dMod, 0.0, 0.03 );
+
+			const double dAngleError = AngleError;
+			const bool bThirty = NearlyEqual( dMod, 0.0, dAngleError );
 			if ( bThirty )
 			{
 				KillTimer( 1 );
@@ -1070,8 +1249,22 @@ void CLunarOrbitView::UpdateMoonPosition()
 	pDoc->LunarGravityY = dAy; // Y gravity
 	pDoc->RunningTime = dTime;
 
+	// update the distance vector with the moon's new position
+	DistanceVector.FirstPoint = MoonCenter;
+	
+	// X and y components of the moon's distance to the earth
+	DistanceX = DistanceVector.VectorX;
+	DistanceX.Description = _T( "Sx" );
+	DistanceY = DistanceVector.VectorY;
+	DistanceY.Description = _T( "Sy" );
+
 	// update the gravity vector with the moon's new position
 	GravityVector.FirstPoint = MoonCenter;
+	GravityVector.SecondPoint = EarthCenter;
+
+	// set the vector's length to two inches while keeping the angle the same
+	const double dGravityLength = InchesToLogical( 2.0 );
+	GravityVector.Length = dGravityLength;
 
 	// X and y components of gravity
 	GravityX = GravityVector.VectorX;
@@ -1079,23 +1272,14 @@ void CLunarOrbitView::UpdateMoonPosition()
 	GravityY = GravityVector.VectorY;
 	GravityY.Description = _T( "Ay" );
 
-	// update the distance vector with the moon's new position
-	DistanceVector.FirstPoint = MoonCenter;
-
-	// X and y components of the moon's distance to the earth
-	DistanceX = DistanceVector.VectorX;
-	DistanceX.Description = _T( "Sx" );
-	DistanceY = DistanceVector.VectorY;
-	DistanceY.Description = _T( "Sy" );
-
 	// copy the velocity vector location from the acceleration vector
 	VelocityVector.FirstPoint = GravityVector.FirstPoint;
 	VelocityVector.SecondPoint = GravityVector.SecondPoint;
 
 	// set the vector's length to one inch while keeping the angle the
 	// same as the acceleration vector
-	const double dLength = InchesToLogical( 1.0 );
-	VelocityVector.Length = dLength;
+	const double dVelocityLength = InchesToLogical( 1.0 );
+	VelocityVector.Length = dVelocityLength;
 
 	// the velocity is 90 degrees out of phase with the acceleration
 	// (rotation around the earth is counter-clockwise when looking down 

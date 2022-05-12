@@ -30,6 +30,9 @@ protected:
 	// (rotated around second point of vector)
 	double m_dArrowheadAngle;
 
+	// draw an arc of the angle
+	bool m_bDrawArc;
+
 	// thickness of the vector in inches
 	double m_dThickness;
 
@@ -124,6 +127,20 @@ public:
 	__declspec( property( get = GetArrowheadAngle, put = SetArrowheadAngle ) )
 		double ArrowheadAngle;
 
+	// draw an arc of the angle
+	inline bool GetDrawArc()
+	{
+		return m_bDrawArc;
+	}
+	// draw an arc of the angle
+	inline void SetDrawArc( bool value )
+	{
+		m_bDrawArc = value;
+	}
+	// draw an arc of the angle
+	__declspec( property( get = GetDrawArc, put = SetDrawArc  ) )
+		bool DrawArc;
+
 	// thickness of the vector in inches
 	inline double GetThickness()
 	{
@@ -212,6 +229,9 @@ public:
 		// copy this vector to the return value
 		CMagnitudeVector value = *this;
 
+		// default to not drawing the arc
+		value.DrawArc = false;
+
 		// the X vector is horizontal so the Y values are the same
 		value.Y2 = Y1;
 
@@ -241,6 +261,9 @@ public:
 	{
 		// copy this vector to the return value
 		CMagnitudeVector value = *this;
+
+		// default to not drawing the arc
+		value.DrawArc = false;
 
 		// the Y vector is vertical so the X values are the same
 		value.X2 = X1;
@@ -327,6 +350,7 @@ public:
 		Description = in.Description;
 		ArrowheadLength = in.ArrowheadLength;
 		ArrowheadAngle = in.ArrowheadAngle;
+		DrawArc = in.DrawArc;
 		Thickness = in.Thickness;
 		TextHeight = in.TextHeight;
 		Color = in.Color;
@@ -382,6 +406,7 @@ public:
 		TextHeight = 0.18; // inches
 		Decimals = 3; // three decimal places of precision
 		NumericalFormat = _T( "e" ); // exponential floating point format
+		DrawArc = true;
 	}
 	// destructor
 	virtual ~CMagnitudeVector()

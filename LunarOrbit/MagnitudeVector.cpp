@@ -134,6 +134,38 @@ void CMagnitudeVector::DrawVector( CDC * pDC )
 	// draw the arrowhead as a polygon
 	pDC->Polygon( &arrow[ 0 ], (int)arrow.size());
 
+	// are we drawing an arc for this vector
+	const bool bDrawArc = DrawArc;
+	if ( bDrawArc )
+	{
+		LOGBRUSH lb;
+		lb.lbStyle = BS_SOLID;
+		lb.lbColor = Color;
+		lb.lbHatch = HS_BDIAGONAL;
+
+		// create a dotted line pen for the arc
+		CPen penArc;
+		penArc.CreatePen( PS_GEOMETRIC | PS_DOT, nThick, &lb );
+
+		// select the new pen into the device context
+		pDC->SelectObject( &penArc );
+
+		// draw the arc
+		const double dAngle = Degrees;
+
+		// length of the vector in logical units
+		const double dLength = Length;
+
+		// radius of the arc in logical units is 1/4 of the length
+		const int nRadius = int( dLength * 1.0 / 4.0 );
+
+		// set the starting point of the arc
+		pDC->MoveTo( pt1.x + nRadius, pt1.y );
+
+		// draw the arc of the vector angle
+		pDC->AngleArc( pt1.x, pt1.y, nRadius, float( 0 ), float( dAngle ) );
+	}
+
 	// restore the device context
 	pDC->SelectObject( pBrOld );
 	pDC->SelectObject( pPenOld );
