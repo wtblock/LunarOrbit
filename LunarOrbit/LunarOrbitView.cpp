@@ -15,13 +15,13 @@
 #define _DOUBLE_BUFFER
 
 /////////////////////////////////////////////////////////////////////////////
-IMPLEMENT_DYNCREATE(CLunarOrbitView, CScrollView)
+IMPLEMENT_DYNCREATE(CLunarOrbitView, CBaseView)
 
 /////////////////////////////////////////////////////////////////////////////
-BEGIN_MESSAGE_MAP(CLunarOrbitView, CScrollView)
+BEGIN_MESSAGE_MAP(CLunarOrbitView, CBaseView)
 	// Standard printing commands
-	ON_COMMAND(ID_FILE_PRINT, &CScrollView::OnFilePrint)
-	ON_COMMAND(ID_FILE_PRINT_DIRECT, &CScrollView::OnFilePrint)
+	ON_COMMAND(ID_FILE_PRINT, &CBaseView::OnFilePrint)
+	ON_COMMAND(ID_FILE_PRINT_DIRECT, &CBaseView::OnFilePrint)
 	ON_COMMAND(ID_FILE_PRINT_PREVIEW, &CLunarOrbitView::OnFilePrintPreview)
 	ON_WM_CONTEXTMENU()
 	ON_WM_RBUTTONUP()
@@ -60,8 +60,64 @@ BOOL CLunarOrbitView::PreCreateWindow(CREATESTRUCT& cs)
 	// TODO: Modify the Window class or styles here by modifying
 	//  the CREATESTRUCT cs
 
-	return CScrollView::PreCreateWindow(cs);
+	return CBaseView::PreCreateWindow(cs);
 }
+
+/////////////////////////////////////////////////////////////////////////////
+// render the page or view
+void CLunarOrbitView::render
+(
+	CDC* pDC, double dTopOfView, double dBottomOfView, int nLogicalWidth
+)
+{
+	CBaseView::render( pDC, dTopOfView, dBottomOfView, nLogicalWidth );
+
+	// draw the lunar orbit up to this point in time
+	RenderLunarOrbit( pDC );
+
+	// render Newton's equations of motion
+	RenderEquations( pDC );
+
+	// render the initial condition text
+	RenderInitialConditions( pDC );
+
+	// render the distance text information
+	RenderDistanceText( pDC );
+
+	// render the gravity text information
+	RenderGravityText( pDC );
+
+	// render the velocity text information
+	RenderVelocityText( pDC );
+
+	// render the grid labels
+	RenderGridLabels( pDC );
+
+	//// draw the textual information 
+	//RenderText( pDC );
+
+	// draw the document grid
+	RenderGrid( pDC );
+
+	// draw the X and Y scale labels
+	RenderScale( pDC );
+
+	// draw the moon's shape
+	RenderMoon( pDC );
+
+	// draw the earth's shape
+	RenderEarth( pDC );
+
+	// render the distance vector
+	RenderDistance( pDC );
+
+	// render the acceleration vector
+	RenderAcceleration( pDC );
+
+	// render the velocity vector
+	RenderVelocity( pDC );
+
+} // render
 
 /////////////////////////////////////////////////////////////////////////////
 void CLunarOrbitView::OnDraw( CDC* pDC )
@@ -71,57 +127,15 @@ void CLunarOrbitView::OnDraw( CDC* pDC )
 	if ( !pDoc )
 		return;
 
-	CDC* pTargetDC = pDC;
-
-#ifdef _DOUBLE_BUFFER
-	// double buffer output by creating a memory bitmap and drawing
-	// directly to it and then copy the bitmap to the screen to reduce 
-	// screen flicker
-	CRect rectClient;
-	GetClientRect( &rectClient );
-	const int nRectWidth = rectClient.Width();
-	const int nRectHeight = rectClient.Height();
-
-	CBitmap bm;
-	bm.CreateCompatibleBitmap( pDC, nRectWidth, nRectHeight );
-
-	CDC dcMem;
-	dcMem.CreateCompatibleDC( pDC );
-	CBitmap* pBmOld = dcMem.SelectObject( &bm );
-	dcMem.PatBlt( 0, 0, nRectWidth, nRectHeight, WHITENESS );
-	pTargetDC = &dcMem;
-	int nDcOrg = pTargetDC->SaveDC();
-#endif
-
-	const int nLogicalWidth = SetDrawDC( pTargetDC );
-	const double dTopOfView = TopOfView;
-	const double dBottomOfView = BottomOfView;
-	render( pTargetDC, dTopOfView, dBottomOfView, nLogicalWidth );
-
-#ifdef _DOUBLE_BUFFER
-	pTargetDC->RestoreDC( nDcOrg );
-
-	// output the drawing to the screen in a single bitblit
-	pDC->BitBlt
-	(
-		0, 0, nRectWidth, nRectHeight, &dcMem, 0, 0, SRCCOPY
-	);
-
-	dcMem.SelectObject( pBmOld );
-#endif
+	CBaseView::OnDraw( pDC );
 
 } // OnDraw
 
 /////////////////////////////////////////////////////////////////////////////
 void CLunarOrbitView::OnInitialUpdate()
 {
-	CScrollView::OnInitialUpdate();
+	CBaseView::OnInitialUpdate();
 
-	OnVScroll( SB_TOP, 0, nullptr );
-
-	Invalidate();
-
-	m_bInitialUpdate = true;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -133,56 +147,19 @@ void CLunarOrbitView::OnFilePrintPreview()
 /////////////////////////////////////////////////////////////////////////////
 BOOL CLunarOrbitView::OnPreparePrinting(CPrintInfo* pInfo)
 {
-	// turning off multiple copies and collation 
-	pInfo->m_pPD->m_pd.Flags &= ~PD_USEDEVMODECOPIES;
-
-	return DoPreparePrinting(pInfo);
+	return CBaseView::DoPreparePrinting(pInfo);
 }
 
 /////////////////////////////////////////////////////////////////////////////
 void CLunarOrbitView::OnBeginPrinting(CDC* pDC, CPrintInfo* pInfo)
 {
-	// setup the device context for our printer
-	SetPrintDC
-	(
-		pDC,
-		m_nPhysicalPageWidth,
-		m_nPhysicalPageHeight,
-		m_nLogicalPageWidth,
-		m_nLogicalPageHeight
-	);
-
-	// height of the document in inches
-	const double dDocumentHeight = DocumentHeight;
-
-	// height of a page in inches
-	const double dPageHeight = LogicalToInches( m_nLogicalPageHeight );
-
-	// number of printer pages
-	double dPages = dDocumentHeight / dPageHeight;
-
-	// add a page if there is a fraction of a page
-	m_nNumPages = (int)dPages;
-	if ( !NearlyEqual( double( m_nNumPages ), dPages, 0.05 ) )
-	{
-		m_nNumPages++; // account for fractional page
-	}
-
-	// let the print dialog know
-	pInfo->SetMinPage( 1 );
-	pInfo->SetMaxPage( m_nNumPages );
+	CBaseView::OnBeginPrinting( pDC, pInfo );
 }
 
 /////////////////////////////////////////////////////////////////////////////
 void CLunarOrbitView::OnPrint( CDC* pDC, CPrintInfo* pInfo )
 {
-	const double dPageHeight = LogicalToInches( m_nLogicalPageHeight );
-	const int nPage = (int)pInfo->m_nCurPage;
-	const double dTopOfView = ( (float)( nPage - 1 ) ) * dPageHeight;
-	const double dBottomOfView = dTopOfView + dPageHeight;
-
-	// the same render method used to draw on the screen
-	render( pDC, dTopOfView, dBottomOfView, m_nLogicalPageWidth );
+	CBaseView::OnPrint( pDC, pInfo );
 
 } // OnPrint
 
@@ -212,13 +189,13 @@ void CLunarOrbitView::OnContextMenu(CWnd* /* pWnd */, CPoint point)
 #ifdef _DEBUG
 void CLunarOrbitView::AssertValid() const
 {
-	CScrollView::AssertValid();
+	CBaseView::AssertValid();
 }
 
 /////////////////////////////////////////////////////////////////////////////
 void CLunarOrbitView::Dump(CDumpContext& dc) const
 {
-	CScrollView::Dump(dc);
+	CBaseView::Dump(dc);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -232,99 +209,9 @@ CLunarOrbitDoc* CLunarOrbitView::GetDocument() const // non-debug version is inl
 /////////////////////////////////////////////////////////////////////////////
 void CLunarOrbitView::OnPrepareDC( CDC * pDC, CPrintInfo * pInfo )
 {
-	if ( pInfo != nullptr ) // printing
-	{
-		SetPrintDC
-		(
-			pDC,
-			m_nPhysicalPageWidth, m_nPhysicalPageHeight,
-			m_nLogicalPageWidth, m_nLogicalPageHeight
-		);
-	}
+	CBaseView::OnPrepareDC( pDC, pInfo );
 
 } // OnPrepareDC
-
-/////////////////////////////////////////////////////////////////////////////
-// prepare the device context for drawing and
-// return the logical width
-int CLunarOrbitView::SetDrawDC
-(
-	CDC* pDC
-)
-{
-	// the logical width is 11000 since we are mapping the logical
-	// coordinate system to 1000 pixels per inch which means the 
-	// code does not have to be concerned about the actual resolution
-	// of the output device (image, screen, or printer)
-	const int nLogicalWidth = LogicalDocumentWidth;
-	if ( nLogicalWidth != 0 )
-	{
-		// isotropic means the values are the same in the X and Y directions
-		pDC->SetMapMode( MM_ISOTROPIC );
-
-		// using the width for X and Y so that the image will alway fit
-		// horizontally in the window and the vertical dimension will 
-		// adjust proportionally
-		pDC->SetWindowExt( nLogicalWidth, nLogicalWidth );
-		pDC->SetViewportExt( m_sizeClient.cx, m_sizeClient.cx );
-	}
-
-	return nLogicalWidth;
-} // SetDrawDC
-
-/////////////////////////////////////////////////////////////////////////////
-// prepare the device context for printing
-void CLunarOrbitView::SetPrintDC
-(
-	CDC* pDC,
-	int& nPhysicalWidth, // in pixels
-	int& nPhysicalHeight, // in pixels
-	int& nLogicalWidth, // in inches * Map
-	int& nLogicalHeight // in inches * Map
-)
-{
-	nLogicalWidth = LogicalDocumentWidth;
-	nLogicalHeight = LogicalDocumentHeight;
-
-	nPhysicalWidth = pDC->GetDeviceCaps( HORZRES );
-	nPhysicalHeight = pDC->GetDeviceCaps( VERTRES );
-	const int nPixelsPerInchX = pDC->GetDeviceCaps( LOGPIXELSX );
-	const int nPixelsPerInchY = pDC->GetDeviceCaps( LOGPIXELSY );
-
-	CLunarOrbitDoc* pDoc = Document;
-	const int nMap = pDoc->Map;
-	const double dWidth = 
-		(double)nPhysicalWidth * nMap / (double)nPixelsPerInchX;
-	const int nWidth = (int)( dWidth + 0.5 );
-	double dHeight = 
-		(double)nPhysicalHeight * nMap / (double)nPixelsPerInchY;
-	const int nHeight = (int)( dHeight + 0.5 );
-
-	if ( nWidth < nLogicalWidth && nLogicalWidth != 0 )
-	{
-		dHeight = (float)nHeight / (float)nWidth;
-		dHeight *= (float)nLogicalWidth;
-		nLogicalHeight = (int)( dHeight + 0.5 );
-	}
-	else
-	{
-		nLogicalHeight = nHeight;
-		nLogicalWidth = nWidth;
-	}
-
-	// create custom MM_HIENGLISH mapping mode:
-	// 	1. maintain constant aspect ratio
-	//	2. accept coordinates in 1/Map inches
-	//	3. keep entire page width visible at all times
-	//	4. vertical dimensions increase from top to bottom
-	pDC->SetMapMode( MM_ISOTROPIC );
-	//	base horizontal AND VERTICAL extents on page WIDTH
-	//                  ============                 =====
-	pDC->SetWindowExt( nLogicalWidth, nLogicalWidth );
-	//	client WIDTH
-	//		   =====
-	pDC->SetViewportExt( nPhysicalWidth, nPhysicalWidth );
-} // SetPrintDC
 
 /////////////////////////////////////////////////////////////////////////////
 // record the client rectangle every time the windows is resized
@@ -1004,78 +891,6 @@ void CLunarOrbitView::RenderVelocity( CDC * pDC )
 } // RenderVelocity
 
 /////////////////////////////////////////////////////////////////////////////
-// render the page or view
-void CLunarOrbitView::render
-(
-	CDC* pDC, double dTopOfView, double dBottomOfView, int nLogicalWidth
-)
-{
-	double dTopOfPage = 0;
-
-	const double dPageHeight = PageHeight;
-	const double dBottomOfPage = dTopOfPage + dPageHeight;
-
-	// distance from top of view to top of page, where a positive value
-	// indicates the page is partially below the view
-	const double dPageOffset = dTopOfPage - dTopOfView;
-
-	// logical coordinates allow the drawing to be device independent
-	// i.e. rendering works on the screen as well as printing and print
-	// preview
-	const int nPageOffset = InchesToLogical( dPageOffset );
-	const int nLogicalPageHeight = InchesToLogical( dPageHeight );
-
-	// account for the shift of the view due to scrolling or printed pages
-	pDC->SetWindowOrg( 0, -nPageOffset );
-
-	// draw the lunar orbit up to this point in time
-	RenderLunarOrbit( pDC );
-
-	// render Newton's equations of motion
-	RenderEquations( pDC );
-
-	// render the initial condition text
-	RenderInitialConditions( pDC );
-
-	// render the distance text information
-	RenderDistanceText( pDC );
-
-	// render the gravity text information
-	RenderGravityText( pDC );
-
-	// render the velocity text information
-	RenderVelocityText( pDC );
-
-	// render the grid labels
-	RenderGridLabels( pDC );
-
-	//// draw the textual information 
-	//RenderText( pDC );
-
-	// draw the document grid
-	RenderGrid( pDC );
-
-	// draw the X and Y scale labels
-	RenderScale( pDC );
-
-	// draw the moon's shape
-	RenderMoon( pDC );
-
-	// draw the earth's shape
-	RenderEarth( pDC );
-
-	// render the distance vector
-	RenderDistance( pDC );
-
-	// render the acceleration vector
-	RenderAcceleration( pDC );
-
-	// render the velocity vector
-	RenderVelocity( pDC );
-
-} // render
-
-/////////////////////////////////////////////////////////////////////////////
 // add the current moon position to the historical points of the lunar orbit
 void CLunarOrbitView::AddOrbitalPoint()
 {
@@ -1304,14 +1119,8 @@ void CLunarOrbitView::UpdateMoonPosition()
 /////////////////////////////////////////////////////////////////////////////
 BOOL CLunarOrbitView::OnEraseBkgnd( CDC* pDC )
 {
-#ifdef _DOUBLE_BUFFER
-	// double buffer output by creating a memory bitmap and drawing
-	// directly to it and then copy the bitmap to the screen to reduce flicker
-	// need to prevent the default erase background behavior
-	return TRUE;
-#else
-	return CView::OnEraseBkgnd( pDC );
-#endif
+	return CBaseView::OnEraseBkgnd( pDC );
+
 } // OnEraseBkgnd
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1320,75 +1129,8 @@ void CLunarOrbitView::OnVScroll( UINT nSBCode, UINT nPos, CScrollBar* pScrollBar
 	CLunarOrbitDoc* pDoc = Document;
 	ASSERT_VALID( pDoc );
 
-	double dTop = TopOfView;
-	double dLast = Last;
-	const double dLineHeight = LineHeight;
-	const double dPageHeight = PageHeight;
+	CBaseView::OnVScroll( nSBCode, nPos, pScrollBar );
 
-	switch ( nSBCode )
-	{
-		case SB_PAGEDOWN: // Scroll one page down.
-			if ( NearlyEqual( dTop, dLast ) ) return;
-			dTop += dPageHeight;
-			if ( dTop > dLast )
-			{
-				dTop = dLast;
-			}
-			break;
-		case SB_LINEDOWN: // Scroll one line down.
-			if ( NearlyEqual( dTop, dLast ) ) return;
-			dTop += dLineHeight;
-			break;
-		case SB_PAGEUP: // Scroll one page up.
-			if ( NearlyEqual( dTop, 0.0 ) ) return;
-			dTop -= dPageHeight;
-			break;
-		case SB_LINEUP: // Scroll one line up.
-			if ( NearlyEqual( dTop, 0.0 ) ) return;
-			dTop -= dLineHeight;
-			break;
-		case SB_THUMBTRACK: 	// Drag scroll box to specified position. 
-								// The current position is provided in nPos.
-			dTop = nPos * dLineHeight;
-			break;
-		case SB_THUMBPOSITION: // Scroll to the absolute position. 
-								// The current position is provided in nPos.
-
-			dTop = nPos * dLineHeight;
-			break;
-		case SB_TOP: // Scroll to top.
-			dTop = 0;
-			break;
-		case SB_BOTTOM: // Scroll to bottom.
-			dTop = dLast;
-			break;
-		case SB_ENDSCROLL: // End scroll.
-			return;
-	} // switch 
-
-	// cannot scroll above the top
-	if ( dTop < 0 )
-	{
-		dTop = 0;
-	}
-	// cannot scroll below the bottom
-	else if ( dTop > dLast )
-	{
-		dTop = dLast;
-	}
-
-	if ( !NearlyEqual( dLast, 0.0 ) )
-	{
-		const double dLines = dLast / dLineHeight;
-		const int nLines = int( dLines + 0.5f );
-		const double dRatio = dTop / dLast;
-		const double dLine = dLines * dRatio;
-		int nLine = int( dLine + 0.5f );
-		SetScrollPos( SB_VERT, nLine );
-	}
-
-	SetTopOfView( dTop );
-	InvalidateRect( NULL );
 } // OnVScroll
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1400,7 +1142,7 @@ void CLunarOrbitView::OnTimer( UINT_PTR nIDEvent )
 	// redraw the view
 	Invalidate();
 
-	CScrollView::OnTimer( nIDEvent );
+	CBaseView::OnTimer( nIDEvent );
 } // OnTimer
 
 /////////////////////////////////////////////////////////////////////////////

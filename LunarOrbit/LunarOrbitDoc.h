@@ -4,10 +4,11 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include "BaseDoc.h"
 #include "MagnitudeVector.h"
 
 /////////////////////////////////////////////////////////////////////////////
-class CLunarOrbitDoc : public CDocument
+class CLunarOrbitDoc : public CBaseDoc
 {
 protected: // create from serialization only
 	CLunarOrbitDoc();

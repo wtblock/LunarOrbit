@@ -13,10 +13,10 @@
 #endif
 
 /////////////////////////////////////////////////////////////////////////////
-IMPLEMENT_DYNCREATE(CLunarOrbitDoc, CDocument)
+IMPLEMENT_DYNCREATE(CLunarOrbitDoc, CBaseDoc)
 
 /////////////////////////////////////////////////////////////////////////////
-BEGIN_MESSAGE_MAP(CLunarOrbitDoc, CDocument)
+BEGIN_MESSAGE_MAP(CLunarOrbitDoc, CBaseDoc)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -160,7 +160,7 @@ CLunarOrbitDoc::~CLunarOrbitDoc()
 /////////////////////////////////////////////////////////////////////////////
 BOOL CLunarOrbitDoc::OnNewDocument()
 {
-	if (!CDocument::OnNewDocument())
+	if (!CBaseDoc::OnNewDocument())
 		return FALSE;
 
 	// TODO: add reinitialization code here
@@ -186,13 +186,13 @@ void CLunarOrbitDoc::Serialize(CArchive& ar)
 #ifdef _DEBUG
 void CLunarOrbitDoc::AssertValid() const
 {
-	CDocument::AssertValid();
+	CBaseDoc::AssertValid();
 }
 
 /////////////////////////////////////////////////////////////////////////////
 void CLunarOrbitDoc::Dump(CDumpContext& dc) const
 {
-	CDocument::Dump(dc);
+	CBaseDoc::Dump(dc);
 }
 #endif //_DEBUG
 
