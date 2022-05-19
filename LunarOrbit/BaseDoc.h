@@ -14,33 +14,6 @@ protected: // create from serialization only
 
 	// properties
 public:
-	// PI
-	static double GetPI()
-	{
-		return 3.1415926535897932384626433832795;
-	}
-	// PI
-	__declspec( property( get = GetPI ) )
-		double PI;
-
-	// degrees from radians
-	static double GetDegrees( double dRadians )
-	{
-		return 180.0 / GetPI() * dRadians;
-	}
-	// degrees from radians
-	__declspec( property( get = GetDegrees ) )
-		double Degrees[];
-
-	// radians from degrees
-	static double GetRadians( double dDegrees )
-	{
-		return GetPI() / 180.0 * dDegrees;
-	}
-	// radians from degrees
-	__declspec( property( get = GetRadians ) )
-		double Radians[];
-
 	// logical pixels per inch
 	static int GetMap()
 	{

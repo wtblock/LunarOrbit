@@ -183,6 +183,7 @@
   <ItemGroup>
     <ClInclude Include="BaseDoc.h" />
     <ClInclude Include="BaseView.h" />
+    <ClInclude Include="CHelper.h" />
     <ClInclude Include="ChildFrm.h" />
     <ClInclude Include="Linear.h" />
     <ClInclude Include="LunarOrbit.h" />

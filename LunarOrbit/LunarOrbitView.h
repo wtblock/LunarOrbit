@@ -17,12 +17,6 @@ protected: // create from serialization only
 	CLunarOrbitView();
 	DECLARE_DYNCREATE(CLunarOrbitView)
 
-	int m_nPhysicalPageWidth;
-	int m_nPhysicalPageHeight;
-	int m_nLogicalPageWidth;
-	int m_nLogicalPageHeight;
-	bool m_bInitialUpdate;
-	int m_nNumPages;
 	bool m_bRunning;
 	bool m_bSingleOrbit;
 	bool m_bThirtyDegreeSteps;
@@ -96,7 +90,7 @@ public:
 	// get bottom of view in inches
 	double GetBottomOfView()
 	{
-		return m_dTop + VisibleHeight;
+		return TopOfView + VisibleHeight;
 	}
 	// get bottom of view in inches
 	__declspec( property( get = GetBottomOfView ) )
@@ -204,7 +198,7 @@ public:
 		const double dRadians = AngleInRadians;
 
 		// angle in degrees 
-		const double value = Degrees( dRadians );
+		const double value = CHelper::GetDegrees( dRadians );
 
 		// record the angle
 		AngleInDegrees = value;
@@ -228,7 +222,7 @@ public:
 		const double dRadians = AngleInRadians;
 
 		// angle in degrees 
-		double value = Degrees( dRadians );
+		double value = CHelper::GetDegrees( dRadians );
 
 		CPoint ptMoon = MoonCenterRelativeToEarth;
 
@@ -526,10 +520,7 @@ public:
 	// render the page or view
 	virtual void render
 	(
-		CDC* pDC,
-		double dTopOfView,
-		double dBottomOfView,
-		int nLogicalWidth
+		CDC* pDC, double dLeftOfView, double dTopOfView
 	);
 	virtual void OnPrepareDC( CDC* pDC, CPrintInfo* pInfo = NULL );
 	virtual void OnDraw(CDC* pDC);  // overridden to draw this view

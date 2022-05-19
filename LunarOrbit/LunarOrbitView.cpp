@@ -26,7 +26,6 @@ BEGIN_MESSAGE_MAP(CLunarOrbitView, CBaseView)
 	ON_WM_CONTEXTMENU()
 	ON_WM_RBUTTONUP()
 	ON_WM_SIZE()
-	ON_WM_VSCROLL()
 	ON_WM_ERASEBKGND()
 	ON_WM_TIMER()
 	ON_COMMAND( ID_EDIT_PAUSE, &CLunarOrbitView::OnEditPause )
@@ -67,10 +66,10 @@ BOOL CLunarOrbitView::PreCreateWindow(CREATESTRUCT& cs)
 // render the page or view
 void CLunarOrbitView::render
 (
-	CDC* pDC, double dTopOfView, double dBottomOfView, int nLogicalWidth
+	CDC* pDC, double dLeftOfView, double dTopOfView
 )
 {
-	CBaseView::render( pDC, dTopOfView, dBottomOfView, nLogicalWidth );
+	CBaseView::render( pDC, dLeftOfView, dTopOfView );
 
 	// draw the lunar orbit up to this point in time
 	RenderLunarOrbit( pDC );
@@ -1010,7 +1009,8 @@ void CLunarOrbitView::UpdateMoonPosition()
 			const double dMod = fmod( dAngle, 30.0 );
 
 			const double dAngleError = AngleError;
-			const bool bThirty = NearlyEqual( dMod, 0.0, dAngleError );
+			const bool bThirty = 
+				CHelper::NearlyEqual( dMod, 0.0, dAngleError );
 			if ( bThirty )
 			{
 				KillTimer( 1 );
